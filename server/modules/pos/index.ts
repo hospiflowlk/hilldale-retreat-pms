@@ -13,6 +13,7 @@ export const posRoutes: FastifyPluginAsync = async (fastify) => {
       orderNumber: o.orderNumber || o.id,
       invoiceNumber: o.invoiceNumber || o.id,
       sessionId: o.sessionId || undefined,
+      walkInSessionId: o.sessionId || undefined, // MAP sessionId to walkInSessionId for the frontend Walk-In tab
       bookingId: o.bookingId || undefined,
       roomNumber: o.roomNumber || undefined,
       orderType: o.orderType || 'dine-in',
@@ -53,7 +54,8 @@ export const posRoutes: FastifyPluginAsync = async (fastify) => {
       id: orderId,
       orderNumber,
       invoiceNumber,
-      sessionId: data.sessionId || null,
+      sessionId: data.sessionId || data.walkInSessionId || null, // Ensure walkInSessionId from frontend gets mapped to sessionId column
+      walkInSessionId: data.walkInSessionId || null,
       reservationId: data.reservationId ? parseInt(data.reservationId) : null,
       bookingId: data.bookingId || null,
       roomNumber: data.roomNumber || null,
