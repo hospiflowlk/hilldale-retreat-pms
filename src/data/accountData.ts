@@ -1,0 +1,82 @@
+import { Account, AccountTransaction } from '../types';
+
+export const INITIAL_ACCOUNTS: Account[] = [
+  {
+    id: 'acc-bank-cml-lkr',
+    name: 'Commercial Bank - Main Operations (LKR)',
+    type: 'bank',
+    currency: 'LKR',
+    bankName: 'Commercial Bank of Ceylon',
+    accountNumber: '1000492817',
+    branch: 'Bandarawela Branch',
+    openingBalance: 1250000,
+    openingDate: '2026-08-01',
+    balance: 1250000,
+    color: '#2B5329',
+    interBankTransferFee: 50,
+    interBankFeeType: 'flat',
+    cardCommissionPercent: 2.5,
+    description: 'Primary operational current account for merchant settlements, payroll transfers, and supplier payments',
+    isActive: true,
+    createdAt: '2026-08-01T00:00:00.000Z',
+    updatedAt: '2026-08-21T00:00:00.000Z'
+  },
+  {
+    id: 'acc-bank-sampath-usd',
+    name: 'Sampath Bank - Foreign Currency (USD)',
+    type: 'bank',
+    currency: 'USD',
+    bankName: 'Sampath Bank PLC',
+    accountNumber: '0039281940',
+    branch: 'Colombo Corporate Branch',
+    openingBalance: 10000,
+    openingDate: '2026-08-01',
+    balance: 10000,
+    color: '#1D4ED8',
+    interBankTransferFee: 15,
+    interBankFeeType: 'flat',
+    cardCommissionPercent: 3.0,
+    description: 'Dedicated USD account for international OTA transfers, stripe payouts and overseas wire settlements',
+    isActive: true,
+    createdAt: '2026-08-01T00:00:00.000Z',
+    updatedAt: '2026-08-21T00:00:00.000Z'
+  },
+  {
+    id: 'acc-cash-frontdesk',
+    name: 'Front Desk Cash Float & Register (LKR)',
+    type: 'cash',
+    currency: 'LKR',
+    bankName: 'Front Office Reception',
+    accountNumber: 'REG-01',
+    branch: 'Hilldale Main Lobby',
+    openingBalance: 50000,
+    openingDate: '2026-08-01',
+    balance: 50000,
+    color: '#5A634D',
+    description: 'Front desk petty cash drawer and restaurant currency float for walk-in and guest checkouts',
+    isActive: true,
+    createdAt: '2026-08-01T00:00:00.000Z',
+    updatedAt: '2026-08-21T00:00:00.000Z'
+  },
+  {
+    id: 'acc-card-hnb-corp',
+    name: 'HNB Corporate Visa Credit Card',
+    type: 'credit_card',
+    currency: 'LKR',
+    bankName: 'Hatton National Bank',
+    accountNumber: '4829',
+    branch: 'Corporate Banking Unit',
+    creditLimit: 1000000,
+    billingCycleDay: 15,
+    openingBalance: 0,
+    openingDate: '2026-08-01',
+    balance: 0,
+    color: '#B45309',
+    description: 'Corporate emergency revolving card for villa provisions, diesel fuel procurement and web subscriptions',
+    isActive: true,
+    createdAt: '2026-08-01T00:00:00.000Z',
+    updatedAt: '2026-08-21T00:00:00.000Z'
+  }
+];
+
+export const INITIAL_ACCOUNT_TRANSACTIONS: AccountTransaction[] = [];
