@@ -73,7 +73,8 @@ fastify.get('/api/health', async () => {
 
 // In production: serve the React build (dist/) from the same server
 if (IS_PRODUCTION) {
-  const distPath = path.join(__dirname, '..', 'dist');
+  // Use process.cwd() because esbuild bundles this file into the root directory as server.js
+  const distPath = path.join(process.cwd(), 'dist');
 
   // Serve static assets (JS, CSS, images)
   fastify.register(import('@fastify/static'), {
