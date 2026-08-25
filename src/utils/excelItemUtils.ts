@@ -31,7 +31,8 @@ export const exportMasterItemsToExcel = (items: MasterItem[], customFileName?: s
   const fileName = customFileName || `Hilldale_Master_Items_${dateStr}.xlsx`;
 
   const formatItemType = (type: ItemType) => {
-    if (type === 'RESALE') return 'Resale / Raw Stock';
+    if (type === 'RAW' || type === 'RAW_MATERIAL') return 'Raw Stock / Ingredients';
+    if (type === 'RESALE') return 'Direct Resale Stock';
     if (type === 'RECIPE') return 'Recipe (BOM)';
     if (type === 'EXPENSE') return 'Non-Stock Expense';
     return type;
@@ -42,13 +43,16 @@ export const exportMasterItemsToExcel = (items: MasterItem[], customFileName?: s
     'No': idx + 1,
     'Item ID': item.id,
     'Item / Service Name': item.name,
-    'Item Classification & Preparation Type': formatItemType(item.type),
+    'Item Classification & Role': formatItemType(item.type),
     'Master Category': item.categoryName,
     'Unit of Measure': item.unit,
     'Cost Price (USD)': item.costPriceUSD,
-    'Selling Price (USD)': item.type === 'EXPENSE' ? 0 : item.sellingPriceUSD,
+    'Selling Price (USD)': item.type === 'EXPENSE' || item.type === 'RAW' || item.type === 'RAW_MATERIAL' ? 0 : item.sellingPriceUSD,
     'Current Stock Level': item.type === 'EXPENSE' ? 0 : item.currentStock,
     'Reorder Level (Low Stock Alert)': item.type === 'EXPENSE' ? 0 : item.reorderThreshold,
+    'Show in POS': item.showInPos !== false ? 'Yes' : 'No',
+    'Use in Invoices': item.useInInvoices !== false ? 'Yes' : 'No',
+    'Use in Expenses': item.useInExpenses !== false ? 'Yes' : 'No',
     'Barcode / SKU (Optional)': item.barcode || '',
     'Status': item.isAvailable !== false ? 'Active' : 'Inactive',
     'Description & Guest Menu Notes': item.description || ''
@@ -59,15 +63,18 @@ export const exportMasterItemsToExcel = (items: MasterItem[], customFileName?: s
   // Set column widths for readability
   worksheet['!cols'] = [
     { wch: 6 },  // No
-    { wch: 22 }, // Item ID
+    { wch: 18 }, // Item ID
     { wch: 36 }, // Item Name
-    { wch: 36 }, // Classification Type
-    { wch: 28 }, // Category
+    { wch: 28 }, // Classification Role
+    { wch: 26 }, // Category
     { wch: 16 }, // Unit
     { wch: 16 }, // Cost Price
     { wch: 18 }, // Selling Price
     { wch: 20 }, // Current Stock
     { wch: 30 }, // Reorder Threshold
+    { wch: 14 }, // Show in POS
+    { wch: 16 }, // Use in Invoices
+    { wch: 16 }, // Use in Expenses
     { wch: 24 }, // Barcode
     { wch: 12 }, // Status
     { wch: 45 }, // Description
@@ -88,44 +95,70 @@ export const downloadSampleItemTemplateExcel = () => {
     {
       'Item ID': '', // Leave blank for new item, or provide existing ID to update
       'Item / Service Name': 'Ceylon Ginger Tea (BOPF)',
-      'Item Classification & Preparation Type': 'Resale / Raw Stock', // Resale / Raw Stock | Recipe (BOM) | Non-Stock Expense
+      'Item Classification & Role': 'Direct Resale Stock', // Raw Stock / Ingredients | Direct Resale Stock | Recipe (BOM) | Non-Stock Expense
       'Master Category': 'Beverages & Packaged Drinks',
       'Unit of Measure': 'pcs', // pcs, kg, g, l, ml, portion, bottle, can, pack, box, service, month, trip
       'Cost Price (USD)': 0.80,
       'Selling Price (USD)': 3.00,
       'Current Stock Level': 50,
       'Reorder Level (Low Stock Alert)': 15,
+      'Show in POS': 'Yes',
+      'Use in Invoices': 'Yes',
+      'Use in Expenses': 'Yes',
       'Barcode / SKU (Optional)': '4790001234567',
       'Status': 'Active',
       'Description & Guest Menu Notes': 'Hand-picked highland tea infused with organic dried ginger'
     },
     {
       'Item ID': '',
-      'Item / Service Name': 'Electricity & Power Grid (CEB)',
-      'Item Classification & Preparation Type': 'Non-Stock Expense',
-      'Master Category': 'Operational Overheads',
-      'Unit of Measure': 'month',
-      'Cost Price (USD)': 280.00,
-      'Selling Price (USD)': 0,
+      'Item / Service Name': 'Chicken Biryani Special',
+      'Item Classification & Role': 'Recipe (BOM)',
+      'Master Category': 'Main Courses & Rice',
+      'Unit of Measure': 'portion',
+      'Cost Price (USD)': 2.50,
+      'Selling Price (USD)': 9.50,
       'Current Stock Level': 0,
       'Reorder Level (Low Stock Alert)': 0,
+      'Show in POS': 'Yes',
+      'Use in Invoices': 'Yes',
+      'Use in Expenses': 'No',
       'Barcode / SKU (Optional)': '',
       'Status': 'Active',
-      'Description & Guest Menu Notes': 'Monthly commercial grid power consumption'
+      'Description & Guest Menu Notes': 'Traditional spiced basmati rice served with roasted chicken'
     },
     {
       'Item ID': '',
       'Item / Service Name': 'Fresh Chicken Breast (Boneless)',
-      'Item Classification & Preparation Type': 'Resale / Raw Stock',
+      'Item Classification & Role': 'Raw Stock / Ingredients',
       'Master Category': 'Meats, Poultry & Seafood',
       'Unit of Measure': 'kg',
       'Cost Price (USD)': 5.50,
       'Selling Price (USD)': 0,
       'Current Stock Level': 20,
       'Reorder Level (Low Stock Alert)': 5,
+      'Show in POS': 'No',
+      'Use in Invoices': 'No',
+      'Use in Expenses': 'Yes',
       'Barcode / SKU (Optional)': '',
       'Status': 'Active',
       'Description & Guest Menu Notes': 'Raw ingredient for kitchen recipes'
+    },
+    {
+      'Item ID': '',
+      'Item / Service Name': 'Electricity & Power Grid (CEB)',
+      'Item Classification & Role': 'Non-Stock Expense',
+      'Master Category': 'Operational Overheads',
+      'Unit of Measure': 'month',
+      'Cost Price (USD)': 280.00,
+      'Selling Price (USD)': 0,
+      'Current Stock Level': 0,
+      'Reorder Level (Low Stock Alert)': 0,
+      'Show in POS': 'No',
+      'Use in Invoices': 'No',
+      'Use in Expenses': 'Yes',
+      'Barcode / SKU (Optional)': '',
+      'Status': 'Active',
+      'Description & Guest Menu Notes': 'Monthly commercial grid power consumption'
     }
   ];
 
@@ -134,13 +167,16 @@ export const downloadSampleItemTemplateExcel = () => {
   worksheet['!cols'] = [
     { wch: 18 }, // Item ID
     { wch: 34 }, // Item Name
-    { wch: 36 }, // Classification Type
+    { wch: 28 }, // Classification Role
     { wch: 30 }, // Category
     { wch: 18 }, // Unit of Measure
     { wch: 16 }, // Cost Price (USD)
     { wch: 18 }, // Selling Price (USD)
     { wch: 20 }, // Current Stock
     { wch: 30 }, // Reorder Threshold
+    { wch: 14 }, // Show in POS
+    { wch: 16 }, // Use in Invoices
+    { wch: 16 }, // Use in Expenses
     { wch: 24 }, // Barcode / SKU
     { wch: 12 }, // Status
     { wch: 45 }, // Description
