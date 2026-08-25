@@ -18,6 +18,7 @@ import {
   downloadSampleCategoryTemplateExcel, 
   ParsedCategoryRow 
 } from '../../utils/excelCategoryUtils';
+import { useCategories } from '../../hooks/useMasters';
 
 interface ImportCategoriesModalProps {
   isOpen: boolean;
@@ -25,7 +26,9 @@ interface ImportCategoriesModalProps {
 }
 
 export const ImportCategoriesModal: React.FC<ImportCategoriesModalProps> = ({ isOpen, onClose }) => {
-  const { masterCategories, bulkImportMasterCategories } = useApp();
+  const { data: masterCategories = [] } = useCategories.useGetAll();
+  const createCategoryMut = useCategories.useCreate();
+  const updateCategoryMut = useCategories.useUpdate();
   
   const [isDragging, setIsDragging] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -97,9 +100,27 @@ export const ImportCategoriesModal: React.FC<ImportCategoriesModalProps> = ({ is
     setIsImporting(true);
 
     try {
-      // Simulate network delay for UX
-      await new Promise(resolve => setTimeout(resolve, 800));
-      bulkImportMasterCategories(validRows);
+      for (const row of validRows) {
+        if (row.action === 'update' && row.matchedExistingId) {
+          await updateCategoryMut.mutateAsync({
+            id: row.matchedExistingId,
+            name: row.name,
+            type: row.type,
+            description: row.description || '',
+            color: row.color || '',
+            isActive: row.isActive
+          });
+        } else {
+          await createCategoryMut.mutateAsync({
+            name: row.name,
+            type: row.type,
+            description: row.description || '',
+            color: row.color || '',
+            isActive: row.isActive
+          });
+        }
+      }
+
       setImportSuccess(true);
       
       // Auto close after success

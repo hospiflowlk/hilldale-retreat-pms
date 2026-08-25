@@ -14,12 +14,12 @@ import {
   ArrowRight,
   Info
 } from 'lucide-react';
-import { useApp } from '../../context/AppContext';
 import { 
   parseItemsFromExcel, 
   downloadSampleItemTemplateExcel, 
   ParsedItemRow 
 } from '../../utils/excelItemUtils';
+import { useItems } from '../../hooks/useMasters';
 
 interface ImportItemsModalProps {
   isOpen: boolean;
@@ -27,7 +27,9 @@ interface ImportItemsModalProps {
 }
 
 export const ImportItemsModal: React.FC<ImportItemsModalProps> = ({ isOpen, onClose }) => {
-  const { masterItems, bulkImportMasterItems } = useApp();
+  const { data: masterItems = [] } = useItems.useGetAll();
+  const createItemMut = useItems.useCreate();
+  const updateItemMut = useItems.useUpdate();
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [parsedRows, setParsedRows] = useState<ParsedItemRow[]>([]);
@@ -99,7 +101,7 @@ export const ImportItemsModal: React.FC<ImportItemsModalProps> = ({ isOpen, onCl
     }
   };
 
-  const handleExecuteImport = () => {
+  const handleExecuteImport = async () => {
     const validRows = parsedRows.filter(r => r.errors.length === 0);
     if (validRows.length === 0) {
       setError('No valid items found to import.');
@@ -108,25 +110,45 @@ export const ImportItemsModal: React.FC<ImportItemsModalProps> = ({ isOpen, onCl
 
     setIsLoading(true);
     try {
-      const result = bulkImportMasterItems(
-        validRows.map(r => ({
-          id: r.id,
-          name: r.name,
-          type: r.type,
-          categoryName: r.categoryName,
-          unit: r.unit,
-          costPriceUSD: r.costPriceUSD,
-          sellingPriceUSD: r.sellingPriceUSD,
-          currentStock: r.currentStock,
-          reorderThreshold: r.reorderThreshold,
-          barcode: r.barcode,
-          description: r.description,
-          isAvailable: r.isAvailable
-        })),
-        { updateExisting, createMissingCategories }
-      );
+      let inserted = 0;
+      let updated = 0;
 
-      setImportResult(result);
+      for (const row of validRows) {
+        if (row.action === 'update' && row.matchedExistingId && updateExisting) {
+          await updateItemMut.mutateAsync({
+            id: row.matchedExistingId,
+            name: row.name,
+            type: row.type,
+            categoryName: row.categoryName,
+            unit: row.unit,
+            costPriceUSD: row.costPriceUSD,
+            sellingPriceUSD: row.sellingPriceUSD,
+            currentStock: row.currentStock,
+            reorderThreshold: row.reorderThreshold,
+            barcode: row.barcode,
+            description: row.description,
+            isAvailable: row.isAvailable
+          });
+          updated++;
+        } else if (row.action === 'create') {
+          await createItemMut.mutateAsync({
+            name: row.name,
+            type: row.type,
+            categoryName: row.categoryName,
+            unit: row.unit,
+            costPriceUSD: row.costPriceUSD,
+            sellingPriceUSD: row.sellingPriceUSD,
+            currentStock: row.currentStock,
+            reorderThreshold: row.reorderThreshold,
+            barcode: row.barcode,
+            description: row.description,
+            isAvailable: row.isAvailable
+          });
+          inserted++;
+        }
+      }
+
+      setImportResult({ inserted, updated, errorCount: parsedRows.length - validRows.length });
     } catch (err: any) {
       setError(err.message || 'Error executing bulk import.');
     } finally {

@@ -18,6 +18,7 @@ import {
   downloadSampleSupplierTemplateExcel, 
   ParsedSupplierRow 
 } from '../../utils/excelSupplierUtils';
+import { useSuppliers } from '../../hooks/useMasters';
 
 interface ImportSuppliersModalProps {
   isOpen: boolean;
@@ -25,7 +26,9 @@ interface ImportSuppliersModalProps {
 }
 
 export const ImportSuppliersModal: React.FC<ImportSuppliersModalProps> = ({ isOpen, onClose }) => {
-  const { masterSuppliers, bulkImportMasterSuppliers } = useApp();
+  const { data: masterSuppliers = [] } = useSuppliers.useGetAll();
+  const createSupplierMut = useSuppliers.useCreate();
+  const updateSupplierMut = useSuppliers.useUpdate();
   
   const [isDragging, setIsDragging] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -97,9 +100,29 @@ export const ImportSuppliersModal: React.FC<ImportSuppliersModalProps> = ({ isOp
     setIsImporting(true);
 
     try {
-      // Simulate network delay for UX
-      await new Promise(resolve => setTimeout(resolve, 800));
-      bulkImportMasterSuppliers(validRows);
+      for (const row of validRows) {
+        if (row.action === 'update' && row.matchedExistingId) {
+          await updateSupplierMut.mutateAsync({
+            id: row.matchedExistingId,
+            companyName: row.companyName,
+            contactPerson: row.contactPerson || '',
+            email: row.email || '',
+            phone: row.phone || '',
+            address: row.address || '',
+            isActive: row.isActive
+          });
+        } else {
+          await createSupplierMut.mutateAsync({
+            companyName: row.companyName,
+            contactPerson: row.contactPerson || '',
+            email: row.email || '',
+            phone: row.phone || '',
+            address: row.address || '',
+            isActive: row.isActive
+          });
+        }
+      }
+
       setImportSuccess(true);
       
       // Auto close after success
