@@ -560,7 +560,7 @@ export interface MasterCategory {
 }
 
 // 2. Items Master & Bill of Materials (BOM)
-export type ItemType = 'RESALE' | 'RECIPE' | 'EXPENSE';
+export type ItemType = 'RAW' | 'RESALE' | 'RECIPE' | 'EXPENSE' | 'RAW_MATERIAL';
 export type UnitOfMeasure = 'pcs' | 'kg' | 'g' | 'l' | 'ml' | 'portion' | 'bottle' | 'can' | 'pack' | 'tray' | 'service' | 'month' | 'trip' | 'box';
 
 export interface BOMIngredient {
@@ -583,6 +583,8 @@ export interface MasterItem {
   currentStock: number;
   reorderThreshold: number; // Low stock alert triggered when currentStock <= reorderThreshold
   isAvailable: boolean;
+  useInInvoices?: boolean;
+  useInExpenses?: boolean;
   bom?: BOMIngredient[]; // For RECIPE items
   description?: string;
   barcode?: string;

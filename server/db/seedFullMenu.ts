@@ -29,7 +29,7 @@ async function seedFullMenu() {
           ${item.isVegetarian || false},
           ${item.isAvailable !== false},
           ${item.portionInfo || null},
-          ${JSON.stringify(item.sides || [])}
+          ${JSON.stringify((item as any).sides || [])}
         )
         ON CONFLICT (id) DO UPDATE SET
           name = EXCLUDED.name,

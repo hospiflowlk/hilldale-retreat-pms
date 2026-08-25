@@ -26,6 +26,7 @@ import { useApp } from '../../context/AppContext';
 import { MasterItem, ItemType } from '../../types';
 import { NewItemModal } from './NewItemModal';
 import { ImportItemsModal } from './ImportItemsModal';
+import { BOMBuilderModal } from './BOMBuilderModal';
 import { exportMasterItemsToExcel } from '../../utils/excelItemUtils';
 import { useItems, useCategories } from '../../hooks/useMasters';
 
@@ -46,12 +47,13 @@ export const ItemsMasterTab: React.FC = () => {
     }
   };
 
-  const [activeFilterTab, setActiveFilterTab] = useState<'ALL' | 'RESALE' | 'RECIPE' | 'EXPENSE' | 'LOW_STOCK'>('ALL');
+  const [activeFilterTab, setActiveFilterTab] = useState<'ALL' | 'RAW' | 'RESALE' | 'RECIPE' | 'EXPENSE' | 'LOW_STOCK'>('ALL');
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedBOMItemId, setExpandedBOMItemId] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [selectedRecipeForBOM, setSelectedRecipeForBOM] = useState<MasterItem | null>(null);
   const [itemToEdit, setItemToEdit] = useState<MasterItem | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [isActionsOpen, setIsActionsOpen] = useState(false);
@@ -73,17 +75,18 @@ export const ItemsMasterTab: React.FC = () => {
   const [adjustReason, setAdjustReason] = useState('');
 
   const lowStockItems = useMemo(() => {
-    return masterItems.filter(i => i.type === 'RESALE' && i.reorderThreshold > 0 && i.currentStock <= i.reorderThreshold);
+    return masterItems.filter(i => (i.type === 'RAW' || i.type === 'RESALE' || i.type === 'RAW_MATERIAL') && i.reorderThreshold > 0 && i.currentStock <= i.reorderThreshold);
   }, [masterItems]);
 
   const filteredItems = useMemo(() => {
     return masterItems.filter(item => {
       // Type / Low Stock Filter
+      if (activeFilterTab === 'RAW' && item.type !== 'RAW' && item.type !== 'RAW_MATERIAL') return false;
       if (activeFilterTab === 'RESALE' && item.type !== 'RESALE') return false;
       if (activeFilterTab === 'RECIPE' && item.type !== 'RECIPE') return false;
       if (activeFilterTab === 'EXPENSE' && item.type !== 'EXPENSE') return false;
       if (activeFilterTab === 'LOW_STOCK') {
-        if (item.type !== 'RESALE' || item.reorderThreshold <= 0 || item.currentStock > item.reorderThreshold) {
+        if ((item.type !== 'RAW' && item.type !== 'RESALE' && item.type !== 'RAW_MATERIAL') || item.reorderThreshold <= 0 || item.currentStock > item.reorderThreshold) {
           return false;
         }
       }
@@ -132,6 +135,7 @@ export const ItemsMasterTab: React.FC = () => {
     setAdjustReason('');
   };
 
+  const rawCount = masterItems.filter(i => i.type === 'RAW' || i.type === 'RAW_MATERIAL').length;
   const resaleCount = masterItems.filter(i => i.type === 'RESALE').length;
   const recipeCount = masterItems.filter(i => i.type === 'RECIPE').length;
   const expenseCount = masterItems.filter(i => i.type === 'EXPENSE').length;
@@ -139,53 +143,77 @@ export const ItemsMasterTab: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Metric Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
-        <div className="bg-white p-4 rounded-2xl border border-border shadow-2xs">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <div 
+          onClick={() => setActiveFilterTab('ALL')}
+          className={`bg-white p-3.5 rounded-2xl border transition cursor-pointer shadow-2xs ${activeFilterTab === 'ALL' ? 'border-primary ring-1 ring-primary/20' : 'border-border'}`}
+        >
           <div className="flex items-center justify-between text-secondary mb-1">
-            <span className="text-[11px] font-bold uppercase tracking-wider">Total Items</span>
+            <span className="text-[10px] font-bold uppercase tracking-wider">Total Items</span>
             <Layers className="w-4 h-4 text-primary" />
           </div>
           <div className="text-xl font-bold font-serif text-text">{masterItems.length}</div>
-          <div className="text-[11px] text-secondary mt-0.5">Catalog definitions</div>
+          <div className="text-[10px] text-secondary mt-0.5">Catalog definitions</div>
         </div>
 
-        <div className="bg-white p-4 rounded-2xl border border-border shadow-2xs">
+        <div 
+          onClick={() => setActiveFilterTab('RAW')}
+          className={`bg-white p-3.5 rounded-2xl border transition cursor-pointer shadow-2xs ${activeFilterTab === 'RAW' ? 'border-emerald-600 ring-1 ring-emerald-600/20' : 'border-border'}`}
+        >
           <div className="flex items-center justify-between text-secondary mb-1">
-            <span className="text-[11px] font-bold uppercase tracking-wider">Resale & Raw</span>
-            <Package className="w-4 h-4 text-secondary-dark" />
+            <span className="text-[10px] font-bold uppercase tracking-wider">Raw Stock</span>
+            <Package className="w-4 h-4 text-emerald-600" />
           </div>
-          <div className="text-xl font-bold font-serif text-primary">{resaleCount}</div>
-          <div className="text-[11px] text-secondary mt-0.5">Physical pantry stock</div>
+          <div className="text-xl font-bold font-serif text-emerald-800">{rawCount}</div>
+          <div className="text-[10px] text-secondary mt-0.5">Pantry ingredients</div>
         </div>
 
-        <div className="bg-white p-4 rounded-2xl border border-border shadow-2xs">
+        <div 
+          onClick={() => setActiveFilterTab('RESALE')}
+          className={`bg-white p-3.5 rounded-2xl border transition cursor-pointer shadow-2xs ${activeFilterTab === 'RESALE' ? 'border-sky-600 ring-1 ring-sky-600/20' : 'border-border'}`}
+        >
           <div className="flex items-center justify-between text-secondary mb-1">
-            <span className="text-[11px] font-bold uppercase tracking-wider">Recipes (BOM)</span>
+            <span className="text-[10px] font-bold uppercase tracking-wider">Direct Resale</span>
+            <TrendingUp className="w-4 h-4 text-sky-600" />
+          </div>
+          <div className="text-xl font-bold font-serif text-sky-800">{resaleCount}</div>
+          <div className="text-[10px] text-secondary mt-0.5">Direct retail stock</div>
+        </div>
+
+        <div 
+          onClick={() => setActiveFilterTab('RECIPE')}
+          className={`bg-white p-3.5 rounded-2xl border transition cursor-pointer shadow-2xs ${activeFilterTab === 'RECIPE' ? 'border-amber-600 ring-1 ring-amber-600/20' : 'border-border'}`}
+        >
+          <div className="flex items-center justify-between text-secondary mb-1">
+            <span className="text-[10px] font-bold uppercase tracking-wider">Recipes (BOM)</span>
             <ChefHat className="w-4 h-4 text-amber-700" />
           </div>
           <div className="text-xl font-bold font-serif text-amber-800">{recipeCount}</div>
-          <div className="text-[11px] text-secondary mt-0.5">Auto-deducted dishes</div>
+          <div className="text-[10px] text-secondary mt-0.5">Auto-deducted dishes</div>
         </div>
 
-        <div className="bg-white p-4 rounded-2xl border border-border shadow-2xs">
+        <div 
+          onClick={() => setActiveFilterTab('EXPENSE')}
+          className={`bg-white p-3.5 rounded-2xl border transition cursor-pointer shadow-2xs ${activeFilterTab === 'EXPENSE' ? 'border-purple-600 ring-1 ring-purple-600/20' : 'border-border'}`}
+        >
           <div className="flex items-center justify-between text-secondary mb-1">
-            <span className="text-[11px] font-bold uppercase tracking-wider">Non-Stock Exp.</span>
-            <Briefcase className="w-4 h-4 text-slate-700" />
+            <span className="text-[10px] font-bold uppercase tracking-wider">Non-Stock Exp.</span>
+            <Briefcase className="w-4 h-4 text-purple-700" />
           </div>
-          <div className="text-xl font-bold font-serif text-slate-900">{expenseCount}</div>
-          <div className="text-[11px] text-secondary mt-0.5">Utilities, EPF, supplies</div>
+          <div className="text-xl font-bold font-serif text-purple-900">{expenseCount}</div>
+          <div className="text-[10px] text-secondary mt-0.5">Utilities, EPF, services</div>
         </div>
 
         <div 
           onClick={() => setActiveFilterTab('LOW_STOCK')}
-          className={`p-4 rounded-2xl border transition cursor-pointer shadow-2xs ${
+          className={`p-3.5 rounded-2xl border transition cursor-pointer shadow-2xs ${
             lowStockItems.length > 0
               ? 'bg-rose-50 border-rose-200 hover:border-rose-300'
               : 'bg-white border-border'
           }`}
         >
           <div className="flex items-center justify-between text-secondary mb-1">
-            <span className={`text-[11px] font-bold uppercase tracking-wider ${
+            <span className={`text-[10px] font-bold uppercase tracking-wider ${
               lowStockItems.length > 0 ? 'text-rose-700' : 'text-secondary'
             }`}>
               Low Stock Alerts
@@ -197,7 +225,7 @@ export const ItemsMasterTab: React.FC = () => {
           }`}>
             {lowStockItems.length}
           </div>
-          <div className="text-[11px] text-secondary mt-0.5">
+          <div className="text-[10px] text-secondary mt-0.5">
             {lowStockItems.length > 0 ? 'Items below reorder point' : 'All stock healthy'}
           </div>
         </div>
@@ -233,7 +261,7 @@ export const ItemsMasterTab: React.FC = () => {
             <option value="ALL">All Categories</option>
             {masterCategories.map((c) => (
               <option key={c.id} value={c.id}>
-                {c.parentId ? `↳ ${c.name}` : c.name}
+                {c.parentId ? `└─ ${c.name}` : c.name}
               </option>
             ))}
           </select>
@@ -252,15 +280,26 @@ export const ItemsMasterTab: React.FC = () => {
             All ({masterItems.length})
           </button>
           <button
-            onClick={() => setActiveFilterTab('RESALE')}
+            onClick={() => setActiveFilterTab('RAW')}
             className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1 ${
-              activeFilterTab === 'RESALE'
-                ? 'bg-primary text-white shadow-xs'
+              activeFilterTab === 'RAW'
+                ? 'bg-emerald-700 text-white shadow-xs'
                 : 'bg-surface-muted text-secondary hover:text-text'
             }`}
           >
             <Package className="w-3.5 h-3.5" />
-            <span>Resale & Raw ({resaleCount})</span>
+            <span>Raw Stock ({rawCount})</span>
+          </button>
+          <button
+            onClick={() => setActiveFilterTab('RESALE')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1 ${
+              activeFilterTab === 'RESALE'
+                ? 'bg-sky-700 text-white shadow-xs'
+                : 'bg-surface-muted text-secondary hover:text-text'
+            }`}
+          >
+            <TrendingUp className="w-3.5 h-3.5" />
+            <span>Direct Resale ({resaleCount})</span>
           </button>
           <button
             onClick={() => setActiveFilterTab('RECIPE')}
@@ -271,13 +310,13 @@ export const ItemsMasterTab: React.FC = () => {
             }`}
           >
             <ChefHat className="w-3.5 h-3.5" />
-            <span>Recipes ({recipeCount})</span>
+            <span>Recipes (BOM) ({recipeCount})</span>
           </button>
           <button
             onClick={() => setActiveFilterTab('EXPENSE')}
             className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1 ${
               activeFilterTab === 'EXPENSE'
-                ? 'bg-slate-800 text-white shadow-xs'
+                ? 'bg-purple-800 text-white shadow-xs'
                 : 'bg-surface-muted text-secondary hover:text-text'
             }`}
           >
@@ -412,20 +451,30 @@ export const ItemsMasterTab: React.FC = () => {
                         {/* Type */}
                         <td className="py-3.5 px-4 whitespace-nowrap">
                           {isRecipe ? (
-                            <button
-                              onClick={() => setExpandedBOMItemId(isExpanded ? null : item.id)}
-                              className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200 flex items-center gap-1 hover:bg-amber-100 transition cursor-pointer"
-                            >
-                              <span>Recipe ({item.bom?.length || 0} BOM)</span>
-                              {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-                            </button>
+                            <div className="flex items-center gap-1.5">
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                                Recipe (BOM)
+                              </span>
+                              <button
+                                onClick={() => setSelectedRecipeForBOM(item)}
+                                className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-600 text-white hover:bg-amber-700 transition cursor-pointer flex items-center gap-1 shadow-2xs"
+                                title="Configure Recipe Ingredients"
+                              >
+                                <ChefHat className="w-3 h-3" />
+                                <span>BOM ({item.bom?.length || 0})</span>
+                              </button>
+                            </div>
                           ) : isExpense ? (
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-300">
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-50 text-purple-700 border border-purple-200">
                               Non-Stock Exp.
                             </span>
+                          ) : item.type === 'RAW' || item.type === 'RAW_MATERIAL' ? (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                              Raw Stock
+                            </span>
                           ) : (
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary-light text-primary border border-primary/20">
-                              Resale / Raw
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-sky-50 text-sky-800 border border-sky-200">
+                              Direct Resale
                             </span>
                           )}
                         </td>
@@ -443,9 +492,9 @@ export const ItemsMasterTab: React.FC = () => {
                         {/* Stock Level */}
                         <td className="py-3.5 px-4 text-center whitespace-nowrap">
                           {isRecipe ? (
-                            <span className="text-[11px] text-secondary font-medium">Made to Order</span>
+                            <span className="text-[11px] text-amber-800 font-medium">Auto-deducted</span>
                           ) : isExpense ? (
-                            <span className="text-[11px] text-slate-500 font-medium">N/A (Expense)</span>
+                            <span className="text-[11px] text-purple-600 font-medium">N/A (Expense)</span>
                           ) : (
                             <div className="flex flex-col items-center">
                               <div className="flex items-center gap-1.5">
@@ -470,6 +519,16 @@ export const ItemsMasterTab: React.FC = () => {
                         {/* Actions */}
                         <td className="py-3.5 px-4 text-right whitespace-nowrap">
                           <div className="flex items-center justify-end gap-1">
+                            {isRecipe && (
+                              <button
+                                onClick={() => setSelectedRecipeForBOM(item)}
+                                className="px-2 py-1 text-[11px] font-bold text-amber-800 hover:bg-amber-100 rounded-lg border border-amber-300 transition cursor-pointer flex items-center gap-1"
+                                title="Build Recipe Ingredients"
+                              >
+                                <ChefHat className="w-3 h-3" />
+                                <span>Edit Recipe</span>
+                              </button>
+                            )}
                             {!isRecipe && !isExpense && (
                               <button
                                 onClick={() => setStockAdjustItem(item)}
@@ -621,6 +680,13 @@ export const ItemsMasterTab: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* BOM Builder Modal for Recipe Items */}
+      <BOMBuilderModal
+        isOpen={!!selectedRecipeForBOM}
+        onClose={() => setSelectedRecipeForBOM(null)}
+        recipeItem={selectedRecipeForBOM}
+      />
     </div>
   );
 };

@@ -12,6 +12,8 @@ export interface ParsedItemRow {
   sellingPriceUSD: number;
   currentStock: number;
   reorderThreshold: number;
+  useInInvoices?: boolean;
+  useInExpenses?: boolean;
   barcode?: string;
   description?: string;
   isAvailable: boolean;
@@ -184,15 +186,33 @@ export const parseItemsFromExcel = async (
           const rawId = String(row['Item ID'] || row['id'] || row['ID'] || '').trim();
           const name = String(row['Item / Service Name'] || row['Item Name'] || row['Name'] || row['Item'] || row['name'] || '').trim();
           
-          let rawType = String(row['Item Classification & Preparation Type'] || row['Classification Type'] || row['Type'] || row['Item Type'] || row['type'] || 'RESALE').trim().toUpperCase();
-          if (rawType.includes('EXPENSE') || rawType.includes('SERVICE') || rawType.includes('OVERHEAD') || rawType.includes('NON-STOCK')) {
-            rawType = 'EXPENSE';
-          } else if (rawType.includes('RECIPE') || rawType.includes('BOM') || rawType.includes('PREPARED')) {
-            rawType = 'RECIPE';
-          } else {
-            rawType = 'RESALE';
+          let rawTypeVal = String(
+            row['Item Classification & Preparation Type'] || 
+            row['Classification Type'] || 
+            row['Item Type'] || 
+            row['Type'] || 
+            row['Item Classification'] || 
+            row['type'] || 
+            'RESALE'
+          ).trim().toLowerCase();
+
+          let type: ItemType = 'RESALE';
+          if (rawTypeVal.includes('expense') || rawTypeVal.includes('service') || rawTypeVal.includes('overhead') || rawTypeVal.includes('non-stock')) {
+            type = 'EXPENSE';
+          } else if (rawTypeVal.includes('recipe') || rawTypeVal.includes('bom') || rawTypeVal.includes('prepared') || rawTypeVal.includes('composite')) {
+            type = 'RECIPE';
+          } else if (rawTypeVal.includes('raw') || rawTypeVal.includes('pantry') || rawTypeVal.includes('ingredient') || rawTypeVal === 'none') {
+            type = 'RAW';
+          } else if (rawTypeVal.includes('direct') || rawTypeVal.includes('resale') || rawTypeVal.includes('packaged')) {
+            type = 'RESALE';
           }
-          const type: ItemType = rawType as ItemType;
+
+          // Optional explicit boolean columns
+          const rawInvoice = String(row['Use in Invoices'] || row['Use In Invoices'] || row['Sellable'] || '').trim().toLowerCase();
+          const useInInvoices = rawInvoice ? (rawInvoice === 'yes' || rawInvoice === 'true' || rawInvoice === '1') : (type === 'RESALE' || type === 'RECIPE');
+
+          const rawExpense = String(row['Use in Expenses'] || row['Use In Expenses'] || row['Purchasable'] || '').trim().toLowerCase();
+          const useInExpenses = rawExpense ? (rawExpense === 'yes' || rawExpense === 'true' || rawExpense === '1') : (type === 'RAW' || type === 'RESALE' || type === 'EXPENSE');
 
           const categoryName = String(row['Master Category'] || row['Category'] || row['Category Name'] || row['category'] || 'General').trim();
           
@@ -232,9 +252,11 @@ export const parseItemsFromExcel = async (
             categoryName,
             unit: unit as UnitOfMeasure,
             costPriceUSD,
-            sellingPriceUSD: type === 'EXPENSE' ? 0 : sellingPriceUSD,
+            sellingPriceUSD: type === 'EXPENSE' || type === 'RAW' ? 0 : sellingPriceUSD,
             currentStock: type === 'EXPENSE' ? 0 : currentStock,
             reorderThreshold: type === 'EXPENSE' ? 0 : reorderThreshold,
+            useInInvoices,
+            useInExpenses,
             barcode: barcode || undefined,
             description: description || undefined,
             isAvailable,

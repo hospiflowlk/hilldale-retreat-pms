@@ -8,40 +8,84 @@ export const mastersRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.get('/items', async () => {
     const rawItems = await db.select().from(items);
     const rawCategories = await db.select().from(categories);
+    const rawBoms = await db.select().from(itemBom);
     const catMap = new Map(rawCategories.map(c => [c.id, c.name]));
+    const itemMap = new Map(rawItems.map(i => [i.id, i.name]));
 
-    return rawItems.map(item => ({
-      id: item.id.toString(),
-      name: item.name,
-      type: item.type || 'RESALE',
-      categoryId: item.categoryId ? item.categoryId.toString() : '',
-      categoryName: item.categoryId ? (catMap.get(item.categoryId) || '') : '',
-      unit: item.unit || 'pcs',
-      costPriceUSD: parseFloat(item.costPrice || '0'),
-      sellingPriceUSD: parseFloat(item.sellingPrice || '0'),
-      currentStock: parseFloat(item.stockLevel || '0'),
-      reorderThreshold: parseFloat(item.reorderThreshold || '0'),
-      isAvailable: true,
-      bom: [],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    }));
+    const bomMap = new Map<number, any[]>();
+    for (const b of rawBoms) {
+      if (!bomMap.has(b.recipeItemId)) {
+        bomMap.set(b.recipeItemId, []);
+      }
+      bomMap.get(b.recipeItemId)!.push({
+        ingredientItemId: b.ingredientItemId.toString(),
+        ingredientName: itemMap.get(b.ingredientItemId) || 'Unknown Ingredient',
+        quantity: parseFloat(b.quantityPerUnit || '0'),
+        unit: b.unit || 'pcs',
+      });
+    }
+
+    return rawItems.map(item => {
+      const itemType = item.type === 'RAW_MATERIAL' ? 'RAW' : (item.type || 'RESALE');
+      const itemBomList = bomMap.get(item.id) || [];
+      return {
+        id: item.id.toString(),
+        name: item.name,
+        type: itemType,
+        categoryId: item.categoryId ? item.categoryId.toString() : '',
+        categoryName: item.categoryId ? (catMap.get(item.categoryId) || '') : '',
+        unit: item.unit || 'pcs',
+        costPriceUSD: parseFloat(item.costPrice || '0'),
+        sellingPriceUSD: parseFloat(item.sellingPrice || '0'),
+        currentStock: parseFloat(item.stockLevel || '0'),
+        reorderThreshold: parseFloat(item.reorderThreshold || '0'),
+        isAvailable: true,
+        useInInvoices: item.useInInvoices ?? (itemType === 'RESALE' || itemType === 'RECIPE'),
+        useInExpenses: item.useInExpenses ?? (itemType === 'RAW' || itemType === 'RESALE' || itemType === 'EXPENSE'),
+        barcode: item.barcode || '',
+        description: item.description || '',
+        bom: itemBomList,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+    });
   });
 
   fastify.post('/items', async (request) => {
     const data = request.body as any;
+    const itemType = data.type === 'RAW_MATERIAL' ? 'RAW' : (data.type || 'RESALE');
     const insertPayload: any = {
       name: data.name,
-      type: data.type || 'RESALE',
+      type: itemType,
       categoryId: data.categoryId ? parseInt(data.categoryId) : null,
       unit: data.unit || 'pcs',
       costPrice: (data.costPriceUSD ?? data.costPrice ?? 0).toString(),
       sellingPrice: (data.sellingPriceUSD ?? data.sellingPrice ?? 0).toString(),
       stockLevel: (data.currentStock ?? data.stockLevel ?? 0).toString(),
       reorderThreshold: (data.reorderThreshold ?? 0).toString(),
+      useInInvoices: data.useInInvoices !== undefined ? data.useInInvoices : (itemType === 'RESALE' || itemType === 'RECIPE'),
+      useInExpenses: data.useInExpenses !== undefined ? data.useInExpenses : (itemType === 'RAW' || itemType === 'RESALE' || itemType === 'EXPENSE'),
+      barcode: data.barcode || null,
+      description: data.description || null,
     };
     const result = await db.insert(items).values(insertPayload).returning();
     const raw = result[0];
+
+    // Save BOM if provided
+    if (Array.isArray(data.bom) && data.bom.length > 0) {
+      await db.delete(itemBom).where(eq(itemBom.recipeItemId, raw.id));
+      for (const ingredient of data.bom) {
+        if (ingredient.ingredientItemId) {
+          await db.insert(itemBom).values({
+            recipeItemId: raw.id,
+            ingredientItemId: parseInt(ingredient.ingredientItemId),
+            quantityPerUnit: (ingredient.quantity ?? 1).toString(),
+            unit: ingredient.unit || 'pcs',
+          });
+        }
+      }
+    }
+
     return {
       id: raw.id.toString(),
       name: raw.name,
@@ -54,25 +98,50 @@ export const mastersRoutes: FastifyPluginAsync = async (fastify) => {
       currentStock: parseFloat(raw.stockLevel || '0'),
       reorderThreshold: parseFloat(raw.reorderThreshold || '0'),
       isAvailable: true,
+      useInInvoices: raw.useInInvoices,
+      useInExpenses: raw.useInExpenses,
+      barcode: raw.barcode || '',
+      description: raw.description || '',
       bom: data.bom || [],
     };
   });
 
   fastify.put('/items/:id', async (request) => {
     const { id } = request.params as { id: string };
+    const numId = parseInt(id);
     const data = request.body as any;
     const updatePayload: any = {};
     if (data.name !== undefined) updatePayload.name = data.name;
-    if (data.type !== undefined) updatePayload.type = data.type;
+    if (data.type !== undefined) updatePayload.type = data.type === 'RAW_MATERIAL' ? 'RAW' : data.type;
     if (data.categoryId !== undefined) updatePayload.categoryId = data.categoryId ? parseInt(data.categoryId) : null;
     if (data.unit !== undefined) updatePayload.unit = data.unit;
     if (data.costPriceUSD !== undefined) updatePayload.costPrice = data.costPriceUSD.toString();
     if (data.sellingPriceUSD !== undefined) updatePayload.sellingPrice = data.sellingPriceUSD.toString();
     if (data.currentStock !== undefined) updatePayload.stockLevel = data.currentStock.toString();
     if (data.reorderThreshold !== undefined) updatePayload.reorderThreshold = data.reorderThreshold.toString();
+    if (data.useInInvoices !== undefined) updatePayload.useInInvoices = data.useInInvoices;
+    if (data.useInExpenses !== undefined) updatePayload.useInExpenses = data.useInExpenses;
+    if (data.barcode !== undefined) updatePayload.barcode = data.barcode;
+    if (data.description !== undefined) updatePayload.description = data.description;
 
-    const result = await db.update(items).set(updatePayload).where(eq(items.id, parseInt(id))).returning();
+    const result = await db.update(items).set(updatePayload).where(eq(items.id, numId)).returning();
     const raw = result[0];
+
+    // Save/Update BOM if provided
+    if (Array.isArray(data.bom)) {
+      await db.delete(itemBom).where(eq(itemBom.recipeItemId, numId));
+      for (const ingredient of data.bom) {
+        if (ingredient.ingredientItemId) {
+          await db.insert(itemBom).values({
+            recipeItemId: numId,
+            ingredientItemId: parseInt(ingredient.ingredientItemId),
+            quantityPerUnit: (ingredient.quantity ?? 1).toString(),
+            unit: ingredient.unit || 'pcs',
+          });
+        }
+      }
+    }
+
     return {
       id: raw.id.toString(),
       name: raw.name,
@@ -85,6 +154,10 @@ export const mastersRoutes: FastifyPluginAsync = async (fastify) => {
       currentStock: parseFloat(raw.stockLevel || '0'),
       reorderThreshold: parseFloat(raw.reorderThreshold || '0'),
       isAvailable: true,
+      useInInvoices: raw.useInInvoices,
+      useInExpenses: raw.useInExpenses,
+      barcode: raw.barcode || '',
+      description: raw.description || '',
       bom: data.bom || [],
     };
   });

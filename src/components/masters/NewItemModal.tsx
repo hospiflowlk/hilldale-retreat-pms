@@ -278,12 +278,31 @@ export const NewItemModal: React.FC<NewItemModalProps> = ({
             </div>
           )}
 
-          {/* Type Toggle: 3 Classifications */}
+          {/* Type Toggle: 4 Classifications */}
           <div>
             <label className="block text-xs font-bold text-text uppercase tracking-wider mb-1.5">
-              Item Classification & Preparation Type
+              Item Classification & Role
             </label>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setType('RAW');
+                  if (unit === 'service' || unit === 'month' || unit === 'portion') setUnit('kg');
+                }}
+                className={`p-3 rounded-xl text-left border transition cursor-pointer flex flex-col justify-between gap-1.5 ${
+                  type === 'RAW' || type === 'RAW_MATERIAL'
+                    ? 'bg-emerald-50 border-emerald-600 text-emerald-900 shadow-xs'
+                    : 'bg-white border-border text-secondary hover:text-text hover:bg-surface-muted'
+                }`}
+              >
+                <div className="flex items-center gap-1.5">
+                  <Package className="w-4 h-4 text-emerald-700 shrink-0" />
+                  <span className="text-[11px] font-bold">RAW STOCK</span>
+                </div>
+                <div className="text-[10px] opacity-80 leading-tight">Pantry ingredients bought, not sold on POS</div>
+              </button>
+
               <button
                 type="button"
                 onClick={() => {
@@ -292,15 +311,15 @@ export const NewItemModal: React.FC<NewItemModalProps> = ({
                 }}
                 className={`p-3 rounded-xl text-left border transition cursor-pointer flex flex-col justify-between gap-1.5 ${
                   type === 'RESALE'
-                    ? 'bg-primary-light border-primary text-primary shadow-xs'
+                    ? 'bg-sky-50 border-sky-600 text-sky-900 shadow-xs'
                     : 'bg-white border-border text-secondary hover:text-text hover:bg-surface-muted'
                 }`}
               >
-                <div className="flex items-center gap-2">
-                  <Package className="w-4 h-4 shrink-0" />
-                  <span className="text-xs font-bold">RESALE / RAW STOCK</span>
+                <div className="flex items-center gap-1.5">
+                  <Package className="w-4 h-4 text-sky-700 shrink-0" />
+                  <span className="text-[11px] font-bold">DIRECT RESALE</span>
                 </div>
-                <div className="text-[11px] opacity-80 leading-tight">Physical stock bought & stored or sold as-is</div>
+                <div className="text-[10px] opacity-80 leading-tight">Products bought & sold as-is on POS</div>
               </button>
 
               <button
@@ -311,15 +330,15 @@ export const NewItemModal: React.FC<NewItemModalProps> = ({
                 }}
                 className={`p-3 rounded-xl text-left border transition cursor-pointer flex flex-col justify-between gap-1.5 ${
                   type === 'RECIPE'
-                    ? 'bg-amber-50 border-amber-700 text-amber-800 shadow-xs'
+                    ? 'bg-amber-50 border-amber-700 text-amber-900 shadow-xs'
                     : 'bg-white border-border text-secondary hover:text-text hover:bg-surface-muted'
                 }`}
               >
-                <div className="flex items-center gap-2">
-                  <ChefHat className="w-4 h-4 shrink-0" />
-                  <span className="text-xs font-bold">RECIPE (BOM)</span>
+                <div className="flex items-center gap-1.5">
+                  <ChefHat className="w-4 h-4 text-amber-800 shrink-0" />
+                  <span className="text-[11px] font-bold">RECIPE (BOM)</span>
                 </div>
-                <div className="text-[11px] opacity-80 leading-tight">Prepared dish with auto ingredient deduction</div>
+                <div className="text-[10px] opacity-80 leading-tight">Prepared dish with ingredient deduction</div>
               </button>
 
               <button
@@ -332,15 +351,15 @@ export const NewItemModal: React.FC<NewItemModalProps> = ({
                 }}
                 className={`p-3 rounded-xl text-left border transition cursor-pointer flex flex-col justify-between gap-1.5 ${
                   type === 'EXPENSE'
-                    ? 'bg-slate-100 border-slate-700 text-slate-900 shadow-xs'
+                    ? 'bg-purple-50 border-purple-700 text-purple-900 shadow-xs'
                     : 'bg-white border-border text-secondary hover:text-text hover:bg-surface-muted'
                 }`}
               >
-                <div className="flex items-center gap-2">
-                  <Briefcase className="w-4 h-4 shrink-0" />
-                  <span className="text-xs font-bold">NON-STOCK EXPENSE</span>
+                <div className="flex items-center gap-1.5">
+                  <Briefcase className="w-4 h-4 text-purple-700 shrink-0" />
+                  <span className="text-[11px] font-bold">NON-STOCK EXP.</span>
                 </div>
-                <div className="text-[11px] opacity-80 leading-tight">Utilities, fuel, EPF, stationery, overheads</div>
+                <div className="text-[10px] opacity-80 leading-tight">Utilities, EPF, services, no inventory</div>
               </button>
             </div>
           </div>

@@ -109,13 +109,17 @@ export const businessSources = pgTable('business_sources', {
 export const items = pgTable('items', {
   id: serial('id').primaryKey(),
   name: varchar('name', { length: 255 }).notNull(),
-  type: varchar('type', { length: 50 }).notNull(), // RESALE, RECIPE, RAW_MATERIAL
+  type: varchar('type', { length: 50 }).notNull().default('RESALE'), // RAW, RESALE, RECIPE, EXPENSE
   categoryId: integer('category_id').references(() => categories.id),
   unit: varchar('unit', { length: 50 }),
   costPrice: numeric('cost_price', { precision: 12, scale: 2 }).default('0'),
   sellingPrice: numeric('selling_price', { precision: 12, scale: 2 }).default('0'),
   stockLevel: numeric('stock_level', { precision: 12, scale: 2 }).default('0'),
   reorderThreshold: numeric('reorder_threshold', { precision: 12, scale: 2 }).default('0'),
+  useInInvoices: boolean('use_in_invoices').default(true),
+  useInExpenses: boolean('use_in_expenses').default(true),
+  barcode: varchar('barcode', { length: 100 }),
+  description: text('description'),
 });
 
 export const itemBom = pgTable('item_bom', {
@@ -123,6 +127,7 @@ export const itemBom = pgTable('item_bom', {
   recipeItemId: integer('recipe_item_id').references(() => items.id).notNull(),
   ingredientItemId: integer('ingredient_item_id').references(() => items.id).notNull(),
   quantityPerUnit: numeric('quantity_per_unit', { precision: 12, scale: 4 }).notNull(),
+  unit: varchar('unit', { length: 50 }),
 });
 
 // ---- Rooms & PMS ----
