@@ -198,6 +198,7 @@ export const POSRegister: React.FC = () => {
   const filteredMenuItems = useMemo(() => {
     return menuItems.filter(item => {
       if (!item.isAvailable) return false;
+      if ((item as any).showInPos === false) return false;
       if (vegetarianOnly && !item.isVegetarian) return false;
       if (selectedCategory !== 'all' && item.category !== selectedCategory) return false;
       if (searchQuery.trim()) {

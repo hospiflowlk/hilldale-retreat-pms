@@ -127,7 +127,10 @@ export const ImportItemsModal: React.FC<ImportItemsModalProps> = ({ isOpen, onCl
             reorderThreshold: row.reorderThreshold,
             barcode: row.barcode,
             description: row.description,
-            isAvailable: row.isAvailable
+            isAvailable: row.isAvailable,
+            showInPos: row.showInPos,
+            useInInvoices: row.useInInvoices,
+            useInExpenses: row.useInExpenses
           });
           updated++;
         } else if (row.action === 'create') {
@@ -142,7 +145,10 @@ export const ImportItemsModal: React.FC<ImportItemsModalProps> = ({ isOpen, onCl
             reorderThreshold: row.reorderThreshold,
             barcode: row.barcode,
             description: row.description,
-            isAvailable: row.isAvailable
+            isAvailable: row.isAvailable,
+            showInPos: row.showInPos,
+            useInInvoices: row.useInInvoices,
+            useInExpenses: row.useInExpenses
           });
           inserted++;
         }

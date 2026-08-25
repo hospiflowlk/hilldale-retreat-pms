@@ -585,6 +585,7 @@ export interface MasterItem {
   isAvailable: boolean;
   useInInvoices?: boolean;
   useInExpenses?: boolean;
+  showInPos?: boolean;
   bom?: BOMIngredient[]; // For RECIPE items
   description?: string;
   barcode?: string;

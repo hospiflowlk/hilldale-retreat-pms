@@ -14,6 +14,7 @@ export interface ParsedItemRow {
   reorderThreshold: number;
   useInInvoices?: boolean;
   useInExpenses?: boolean;
+  showInPos?: boolean;
   barcode?: string;
   description?: string;
   isAvailable: boolean;
@@ -214,6 +215,9 @@ export const parseItemsFromExcel = async (
           const rawExpense = String(row['Use in Expenses'] || row['Use In Expenses'] || row['Purchasable'] || '').trim().toLowerCase();
           const useInExpenses = rawExpense ? (rawExpense === 'yes' || rawExpense === 'true' || rawExpense === '1') : (type === 'RAW' || type === 'RESALE' || type === 'EXPENSE');
 
+          const rawPos = String(row['Show in POS'] || row['Show In POS'] || row['POS Visible'] || row['Show POS'] || '').trim().toLowerCase();
+          const showInPos = rawPos ? (rawPos === 'yes' || rawPos === 'true' || rawPos === '1') : (type === 'RESALE' || type === 'RECIPE');
+
           const categoryName = String(row['Master Category'] || row['Category'] || row['Category Name'] || row['category'] || 'General').trim();
           
           let unit = String(row['Unit of Measure'] || row['Unit'] || row['unit'] || 'pcs').trim().toLowerCase();
@@ -257,6 +261,7 @@ export const parseItemsFromExcel = async (
             reorderThreshold: type === 'EXPENSE' ? 0 : reorderThreshold,
             useInInvoices,
             useInExpenses,
+            showInPos,
             barcode: barcode || undefined,
             description: description || undefined,
             isAvailable,

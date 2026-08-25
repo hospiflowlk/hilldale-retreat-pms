@@ -65,6 +65,7 @@ export const NewItemModal: React.FC<NewItemModalProps> = ({
   const [description, setDescription] = useState('');
   const [barcode, setBarcode] = useState('');
   const [isAvailable, setIsAvailable] = useState(true);
+  const [showInPos, setShowInPos] = useState(true);
   const [bom, setBom] = useState<BOMIngredient[]>([]);
   const [error, setError] = useState<string | null>(null);
 
@@ -114,6 +115,7 @@ export const NewItemModal: React.FC<NewItemModalProps> = ({
       setDescription(itemToEdit.description || '');
       setBarcode(itemToEdit.barcode || '');
       setIsAvailable(itemToEdit.isAvailable !== false);
+      setShowInPos(itemToEdit.showInPos !== false);
       setBom(itemToEdit.bom || []);
     } else {
       setName('');
@@ -133,6 +135,7 @@ export const NewItemModal: React.FC<NewItemModalProps> = ({
       setDescription('');
       setBarcode('');
       setIsAvailable(true);
+      setShowInPos(initialType === 'RECIPE' || initialType === 'RESALE');
       setBom([]);
     }
     setError(null);
@@ -224,6 +227,7 @@ export const NewItemModal: React.FC<NewItemModalProps> = ({
       currentStock: isExpense ? 0 : stockNum,
       reorderThreshold: isExpense ? 0 : reorderNum,
       isAvailable,
+      showInPos,
       bom: isRecipe ? bom : undefined,
       description: description.trim() || undefined,
       barcode: barcode.trim() || undefined
@@ -654,18 +658,33 @@ export const NewItemModal: React.FC<NewItemModalProps> = ({
             />
           </div>
 
-          {/* Availability Toggle */}
-          <div className="flex items-center justify-between p-3 rounded-xl bg-surface-muted/40 border border-border">
-            <div>
-              <span className="text-xs font-bold text-text block">Active for Ordering & Sales</span>
-              <span className="text-[11px] text-secondary">Enable this item for active POS cart checkout and stock usage.</span>
+          {/* Toggles: Availability & POS Visibility */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="flex items-center justify-between p-3 rounded-xl bg-surface-muted/40 border border-border">
+              <div>
+                <span className="text-xs font-bold text-text block">Active Item</span>
+                <span className="text-[10px] text-secondary font-medium">General active status in catalog.</span>
+              </div>
+              <input
+                type="checkbox"
+                checked={isAvailable}
+                onChange={(e) => setIsAvailable(e.target.checked)}
+                className="w-4 h-4 accent-primary rounded cursor-pointer"
+              />
             </div>
-            <input
-              type="checkbox"
-              checked={isAvailable}
-              onChange={(e) => setIsAvailable(e.target.checked)}
-              className="w-4 h-4 accent-primary rounded cursor-pointer"
-            />
+
+            <div className="flex items-center justify-between p-3 rounded-xl bg-amber-500/10 border border-amber-200/80">
+              <div>
+                <span className="text-xs font-bold text-amber-950 block">Show in POS Register</span>
+                <span className="text-[10px] text-amber-800 font-medium">Display on POS cashier screen.</span>
+              </div>
+              <input
+                type="checkbox"
+                checked={showInPos}
+                onChange={(e) => setShowInPos(e.target.checked)}
+                className="w-4 h-4 accent-amber-700 rounded cursor-pointer"
+              />
+            </div>
           </div>
 
           {/* Footer Buttons */}

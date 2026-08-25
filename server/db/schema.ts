@@ -118,6 +118,7 @@ export const items = pgTable('items', {
   reorderThreshold: numeric('reorder_threshold', { precision: 12, scale: 2 }).default('0'),
   useInInvoices: boolean('use_in_invoices').default(true),
   useInExpenses: boolean('use_in_expenses').default(true),
+  showInPos: boolean('show_in_pos').default(true),
   barcode: varchar('barcode', { length: 100 }),
   description: text('description'),
 });

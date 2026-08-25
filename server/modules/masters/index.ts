@@ -42,6 +42,7 @@ export const mastersRoutes: FastifyPluginAsync = async (fastify) => {
         isAvailable: true,
         useInInvoices: item.useInInvoices ?? (itemType === 'RESALE' || itemType === 'RECIPE'),
         useInExpenses: item.useInExpenses ?? (itemType === 'RAW' || itemType === 'RESALE' || itemType === 'EXPENSE'),
+        showInPos: item.showInPos ?? (itemType === 'RESALE' || itemType === 'RECIPE'),
         barcode: item.barcode || '',
         description: item.description || '',
         bom: itemBomList,
@@ -65,6 +66,7 @@ export const mastersRoutes: FastifyPluginAsync = async (fastify) => {
       reorderThreshold: (data.reorderThreshold ?? 0).toString(),
       useInInvoices: data.useInInvoices !== undefined ? data.useInInvoices : (itemType === 'RESALE' || itemType === 'RECIPE'),
       useInExpenses: data.useInExpenses !== undefined ? data.useInExpenses : (itemType === 'RAW' || itemType === 'RESALE' || itemType === 'EXPENSE'),
+      showInPos: data.showInPos !== undefined ? data.showInPos : (itemType === 'RESALE' || itemType === 'RECIPE'),
       barcode: data.barcode || null,
       description: data.description || null,
     };
@@ -100,6 +102,7 @@ export const mastersRoutes: FastifyPluginAsync = async (fastify) => {
       isAvailable: true,
       useInInvoices: raw.useInInvoices,
       useInExpenses: raw.useInExpenses,
+      showInPos: raw.showInPos,
       barcode: raw.barcode || '',
       description: raw.description || '',
       bom: data.bom || [],
@@ -121,6 +124,7 @@ export const mastersRoutes: FastifyPluginAsync = async (fastify) => {
     if (data.reorderThreshold !== undefined) updatePayload.reorderThreshold = data.reorderThreshold.toString();
     if (data.useInInvoices !== undefined) updatePayload.useInInvoices = data.useInInvoices;
     if (data.useInExpenses !== undefined) updatePayload.useInExpenses = data.useInExpenses;
+    if (data.showInPos !== undefined) updatePayload.showInPos = data.showInPos;
     if (data.barcode !== undefined) updatePayload.barcode = data.barcode;
     if (data.description !== undefined) updatePayload.description = data.description;
 
@@ -156,6 +160,7 @@ export const mastersRoutes: FastifyPluginAsync = async (fastify) => {
       isAvailable: true,
       useInInvoices: raw.useInInvoices,
       useInExpenses: raw.useInExpenses,
+      showInPos: raw.showInPos,
       barcode: raw.barcode || '',
       description: raw.description || '',
       bom: data.bom || [],

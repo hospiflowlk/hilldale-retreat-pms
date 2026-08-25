@@ -448,35 +448,47 @@ export const ItemsMasterTab: React.FC = () => {
                           </span>
                         </td>
 
-                        {/* Type */}
+                        {/* Type & POS Status */}
                         <td className="py-3.5 px-4 whitespace-nowrap">
-                          {isRecipe ? (
-                            <div className="flex items-center gap-1.5">
-                              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
-                                Recipe (BOM)
+                          <div className="flex items-center gap-1.5">
+                            {isRecipe ? (
+                              <>
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                                  Recipe (BOM)
+                                </span>
+                                <button
+                                  onClick={() => setSelectedRecipeForBOM(item)}
+                                  className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-600 text-white hover:bg-amber-700 transition cursor-pointer flex items-center gap-1 shadow-2xs"
+                                  title="Configure Recipe Ingredients"
+                                >
+                                  <ChefHat className="w-3 h-3" />
+                                  <span>BOM ({item.bom?.length || 0})</span>
+                                </button>
+                              </>
+                            ) : isExpense ? (
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-50 text-purple-700 border border-purple-200">
+                                Non-Stock Exp.
                               </span>
-                              <button
-                                onClick={() => setSelectedRecipeForBOM(item)}
-                                className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-600 text-white hover:bg-amber-700 transition cursor-pointer flex items-center gap-1 shadow-2xs"
-                                title="Configure Recipe Ingredients"
-                              >
-                                <ChefHat className="w-3 h-3" />
-                                <span>BOM ({item.bom?.length || 0})</span>
-                              </button>
-                            </div>
-                          ) : isExpense ? (
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-50 text-purple-700 border border-purple-200">
-                              Non-Stock Exp.
-                            </span>
-                          ) : item.type === 'RAW' || item.type === 'RAW_MATERIAL' ? (
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
-                              Raw Stock
-                            </span>
-                          ) : (
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-sky-50 text-sky-800 border border-sky-200">
-                              Direct Resale
-                            </span>
-                          )}
+                            ) : item.type === 'RAW' || item.type === 'RAW_MATERIAL' ? (
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                                Raw Stock
+                              </span>
+                            ) : (
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-sky-50 text-sky-800 border border-sky-200">
+                                Direct Resale
+                              </span>
+                            )}
+
+                            {item.showInPos !== false ? (
+                              <span className="px-1.5 py-0.5 rounded-md text-[9px] font-extrabold uppercase bg-emerald-100 text-emerald-800 border border-emerald-300" title="Visible in POS Register">
+                                POS
+                              </span>
+                            ) : (
+                              <span className="px-1.5 py-0.5 rounded-md text-[9px] font-semibold uppercase bg-surface-muted text-secondary/60 border border-border" title="Hidden from POS Register">
+                                Hidden
+                              </span>
+                            )}
+                          </div>
                         </td>
 
                         {/* Cost Price */}
