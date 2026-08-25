@@ -31,10 +31,10 @@ export const exportMasterItemsToExcel = (items: MasterItem[], customFileName?: s
   const fileName = customFileName || `Hilldale_Master_Items_${dateStr}.xlsx`;
 
   const formatItemType = (type: ItemType) => {
-    if (type === 'RAW' || type === 'RAW_MATERIAL') return 'Raw Stock / Ingredients';
-    if (type === 'RESALE') return 'Direct Resale Stock';
-    if (type === 'RECIPE') return 'Recipe (BOM)';
-    if (type === 'EXPENSE') return 'Non-Stock Expense';
+    if (type === 'RAW' || type === 'RAW_MATERIAL') return 'RAW STOCK';
+    if (type === 'RESALE') return 'DIRECT RESALE';
+    if (type === 'RECIPE') return 'RECIPE (BOM)';
+    if (type === 'EXPENSE') return 'NON-STOCK EXP.';
     return type;
   };
 
@@ -95,7 +95,7 @@ export const downloadSampleItemTemplateExcel = () => {
     {
       'Item ID': '', // Leave blank for new item, or provide existing ID to update
       'Item / Service Name': 'Ceylon Ginger Tea (BOPF)',
-      'Item Classification & Role': 'Direct Resale Stock', // Raw Stock / Ingredients | Direct Resale Stock | Recipe (BOM) | Non-Stock Expense
+      'Item Classification & Role': 'DIRECT RESALE', // RAW STOCK | DIRECT RESALE | RECIPE (BOM) | NON-STOCK EXP.
       'Master Category': 'Beverages & Packaged Drinks',
       'Unit of Measure': 'pcs', // pcs, kg, g, l, ml, portion, bottle, can, pack, box, service, month, trip
       'Cost Price (USD)': 0.80,
@@ -112,7 +112,7 @@ export const downloadSampleItemTemplateExcel = () => {
     {
       'Item ID': '',
       'Item / Service Name': 'Chicken Biryani Special',
-      'Item Classification & Role': 'Recipe (BOM)',
+      'Item Classification & Role': 'RECIPE (BOM)',
       'Master Category': 'Main Courses & Rice',
       'Unit of Measure': 'portion',
       'Cost Price (USD)': 2.50,
@@ -129,7 +129,7 @@ export const downloadSampleItemTemplateExcel = () => {
     {
       'Item ID': '',
       'Item / Service Name': 'Fresh Chicken Breast (Boneless)',
-      'Item Classification & Role': 'Raw Stock / Ingredients',
+      'Item Classification & Role': 'RAW STOCK',
       'Master Category': 'Meats, Poultry & Seafood',
       'Unit of Measure': 'kg',
       'Cost Price (USD)': 5.50,
@@ -146,7 +146,7 @@ export const downloadSampleItemTemplateExcel = () => {
     {
       'Item ID': '',
       'Item / Service Name': 'Electricity & Power Grid (CEB)',
-      'Item Classification & Role': 'Non-Stock Expense',
+      'Item Classification & Role': 'NON-STOCK EXP.',
       'Master Category': 'Operational Overheads',
       'Unit of Measure': 'month',
       'Cost Price (USD)': 280.00,
@@ -162,7 +162,46 @@ export const downloadSampleItemTemplateExcel = () => {
     }
   ];
 
+  const instructionsData = [
+    {
+      'Field Name': 'Item Classification & Role',
+      'Allowed Options / Format': 'RAW STOCK | DIRECT RESALE | RECIPE (BOM) | NON-STOCK EXP.',
+      'Description & Rules': 'RAW STOCK = Pantry ingredients; DIRECT RESALE = Bought & sold as-is; RECIPE (BOM) = Cooked dishes; NON-STOCK EXP. = Overhead services/utilities.'
+    },
+    {
+      'Field Name': 'Master Category',
+      'Allowed Options / Format': 'Text (e.g., Beverages, Main Courses, Pantry)',
+      'Description & Rules': 'Will be automatically created if it does not already exist in the system.'
+    },
+    {
+      'Field Name': 'Unit of Measure',
+      'Allowed Options / Format': 'pcs | kg | g | l | ml | portion | bottle | can | pack | tray | box | service | month | trip',
+      'Description & Rules': 'Defaults to "pcs" if unrecognized.'
+    },
+    {
+      'Field Name': 'Show in POS',
+      'Allowed Options / Format': 'Yes | No',
+      'Description & Rules': 'Yes = Visible on POS register screen; No = Hidden.'
+    },
+    {
+      'Field Name': 'Use in Invoices',
+      'Allowed Options / Format': 'Yes | No',
+      'Description & Rules': 'Yes = Sellable on guest billing invoices.'
+    },
+    {
+      'Field Name': 'Use in Expenses',
+      'Allowed Options / Format': 'Yes | No',
+      'Description & Rules': 'Yes = Purchasable on supplier expense bills.'
+    },
+    {
+      'Field Name': 'Status',
+      'Allowed Options / Format': 'Active | Inactive',
+      'Description & Rules': 'Active = Enabled in catalog; Inactive = Disabled.'
+    }
+  ];
+
   const worksheet = XLSX.utils.json_to_sheet(sampleData);
+  const instructionsWorksheet = XLSX.utils.json_to_sheet(instructionsData);
 
   worksheet['!cols'] = [
     { wch: 18 }, // Item ID
@@ -182,8 +221,15 @@ export const downloadSampleItemTemplateExcel = () => {
     { wch: 45 }, // Description
   ];
 
+  instructionsWorksheet['!cols'] = [
+    { wch: 30 },
+    { wch: 45 },
+    { wch: 70 }
+  ];
+
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, 'Items Template');
+  XLSX.utils.book_append_sheet(workbook, instructionsWorksheet, 'Valid Options & Guide');
 
   XLSX.writeFile(workbook, 'Hilldale_Items_Import_Template.xlsx');
 };
