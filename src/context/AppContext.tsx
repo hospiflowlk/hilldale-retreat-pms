@@ -759,11 +759,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         mastersSubTab,
         setMastersSubTab,
 
-
-
-
-
-
+        // Add dummy values to prevent crashes until they are fully migrated to the backend
+        supplierPurchases: [],
+        masterSuppliers: [],
+        recordSupplierPayment: () => ({ success: true, message: 'Not implemented backend yet' }),
+        recordSupplierPurchase: () => ({ success: true, message: 'Not implemented backend yet' }),
+        bulkImportMasterSuppliers: () => {},
+        addMasterSupplier: () => ({} as any),
+        updateMasterSupplier: () => {},
+        deleteMasterSupplier: () => ({ success: true }),
 
         // Existing State & Methods
         settings,
