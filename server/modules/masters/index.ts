@@ -52,13 +52,40 @@ export const mastersRoutes: FastifyPluginAsync = async (fastify) => {
     });
   });
 
+  const resolveOrCreateCategoryId = async (categoryId?: any, categoryName?: string, itemType?: string): Promise<{ id: number | null, name: string }> => {
+    if (categoryId && parseInt(categoryId)) {
+      const num = parseInt(categoryId);
+      const cat = await db.select().from(categories).where(eq(categories.id, num));
+      return { id: num, name: cat[0]?.name || categoryName || '' };
+    }
+    if (categoryName && categoryName.trim()) {
+      const trimmed = categoryName.trim();
+      const allCats = await db.select().from(categories);
+      const matched = allCats.find(c => c.name.toLowerCase() === trimmed.toLowerCase());
+      if (matched) {
+        return { id: matched.id, name: matched.name };
+      }
+      const catType = itemType === 'EXPENSE' ? 'EXPENSE' : itemType === 'RAW' ? 'RAW_MATERIAL' : 'RESALE';
+      const inserted = await db.insert(categories).values({
+        name: trimmed,
+        type: catType,
+      }).returning();
+      if (inserted[0]) {
+        return { id: inserted[0].id, name: inserted[0].name };
+      }
+    }
+    return { id: null, name: '' };
+  };
+
   fastify.post('/items', async (request) => {
     const data = request.body as any;
     const itemType = data.type === 'RAW_MATERIAL' ? 'RAW' : (data.type || 'RESALE');
+    const resolvedCat = await resolveOrCreateCategoryId(data.categoryId, data.categoryName, itemType);
+
     const insertPayload: any = {
       name: data.name,
       type: itemType,
-      categoryId: data.categoryId ? parseInt(data.categoryId) : null,
+      categoryId: resolvedCat.id,
       unit: data.unit || 'pcs',
       costPrice: (data.costPriceUSD ?? data.costPrice ?? 0).toString(),
       sellingPrice: (data.sellingPriceUSD ?? data.sellingPrice ?? 0).toString(),
@@ -93,7 +120,7 @@ export const mastersRoutes: FastifyPluginAsync = async (fastify) => {
       name: raw.name,
       type: raw.type,
       categoryId: raw.categoryId ? raw.categoryId.toString() : '',
-      categoryName: data.categoryName || '',
+      categoryName: resolvedCat.name || data.categoryName || '',
       unit: raw.unit,
       costPriceUSD: parseFloat(raw.costPrice || '0'),
       sellingPriceUSD: parseFloat(raw.sellingPrice || '0'),
@@ -114,9 +141,17 @@ export const mastersRoutes: FastifyPluginAsync = async (fastify) => {
     const numId = parseInt(id);
     const data = request.body as any;
     const updatePayload: any = {};
+    const itemType = data.type === 'RAW_MATERIAL' ? 'RAW' : (data.type || undefined);
+
+    let resolvedCatName = data.categoryName || '';
+    if (data.categoryId !== undefined || data.categoryName !== undefined) {
+      const resolvedCat = await resolveOrCreateCategoryId(data.categoryId, data.categoryName, itemType || 'RESALE');
+      updatePayload.categoryId = resolvedCat.id;
+      if (resolvedCat.name) resolvedCatName = resolvedCat.name;
+    }
+
     if (data.name !== undefined) updatePayload.name = data.name;
-    if (data.type !== undefined) updatePayload.type = data.type === 'RAW_MATERIAL' ? 'RAW' : data.type;
-    if (data.categoryId !== undefined) updatePayload.categoryId = data.categoryId ? parseInt(data.categoryId) : null;
+    if (data.type !== undefined) updatePayload.type = itemType;
     if (data.unit !== undefined) updatePayload.unit = data.unit;
     if (data.costPriceUSD !== undefined) updatePayload.costPrice = data.costPriceUSD.toString();
     if (data.sellingPriceUSD !== undefined) updatePayload.sellingPrice = data.sellingPriceUSD.toString();
@@ -151,7 +186,7 @@ export const mastersRoutes: FastifyPluginAsync = async (fastify) => {
       name: raw.name,
       type: raw.type,
       categoryId: raw.categoryId ? raw.categoryId.toString() : '',
-      categoryName: data.categoryName || '',
+      categoryName: resolvedCatName,
       unit: raw.unit,
       costPriceUSD: parseFloat(raw.costPrice || '0'),
       sellingPriceUSD: parseFloat(raw.sellingPrice || '0'),

@@ -224,23 +224,25 @@ export const parseItemsFromExcel = async (
           const name = String(row['Item / Service Name'] || row['Item Name'] || row['Name'] || row['Item'] || row['name'] || '').trim();
           
           let rawTypeVal = String(
+            row['Item Classification & Role'] || 
             row['Item Classification & Preparation Type'] || 
             row['Classification Type'] || 
             row['Item Type'] || 
             row['Type'] || 
             row['Item Classification'] || 
+            row['Classification Role'] || 
             row['type'] || 
-            'RESALE'
+            ''
           ).trim().toLowerCase();
 
           let type: ItemType = 'RESALE';
-          if (rawTypeVal.includes('expense') || rawTypeVal.includes('service') || rawTypeVal.includes('overhead') || rawTypeVal.includes('non-stock')) {
+          if (rawTypeVal.includes('expense') || rawTypeVal.includes('non-stock') || rawTypeVal.includes('overhead') || rawTypeVal.includes('service')) {
             type = 'EXPENSE';
-          } else if (rawTypeVal.includes('recipe') || rawTypeVal.includes('bom') || rawTypeVal.includes('prepared') || rawTypeVal.includes('composite')) {
+          } else if (rawTypeVal.includes('recipe') || rawTypeVal.includes('bom') || rawTypeVal.includes('dish') || rawTypeVal.includes('prepared') || rawTypeVal.includes('composite')) {
             type = 'RECIPE';
-          } else if (rawTypeVal.includes('raw') || rawTypeVal.includes('pantry') || rawTypeVal.includes('ingredient') || rawTypeVal === 'none') {
+          } else if (rawTypeVal.includes('raw') || rawTypeVal.includes('pantry') || rawTypeVal.includes('ingredient')) {
             type = 'RAW';
-          } else if (rawTypeVal.includes('direct') || rawTypeVal.includes('resale') || rawTypeVal.includes('packaged')) {
+          } else if (rawTypeVal.includes('resale') || rawTypeVal.includes('direct') || rawTypeVal.includes('packaged') || rawTypeVal.includes('retail')) {
             type = 'RESALE';
           }
 
