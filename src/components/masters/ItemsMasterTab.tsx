@@ -24,6 +24,8 @@ import {
   FileCode,
   FileJson
 } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
+import { apiClient } from '../../utils/apiClient';
 import { useApp } from '../../context/AppContext';
 import { MasterItem, ItemType } from '../../types';
 import { NewItemModal } from './NewItemModal';
@@ -57,38 +59,20 @@ export const ItemsMasterTab: React.FC = () => {
     }
   };
 
+  const queryClient = useQueryClient();
+
   const handleJSONFileSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     try {
       const jsonItems = await parseItemsFromJSON(file);
       if (window.confirm(`Found ${jsonItems.length} items in JSON backup. Do you want to import them into your master catalog?`)) {
-        let count = 0;
-        for (const item of jsonItems) {
-          await createItemMut.mutateAsync({
-            name: item.name,
-            type: item.type,
-            categoryName: item.categoryName,
-            unit: item.unit,
-            costPriceUSD: item.costPriceUSD,
-            sellingPriceUSD: item.sellingPriceUSD,
-            currentStock: item.currentStock,
-            reorderThreshold: item.reorderThreshold,
-            useInInvoices: item.useInInvoices,
-            useInExpenses: item.useInExpenses,
-            showInPos: item.showInPos,
-            sortOrder: item.sortOrder,
-            bom: item.bom,
-            description: item.description,
-            barcode: item.barcode,
-            isAvailable: item.isAvailable !== false
-          });
-          count++;
-        }
-        alert(`Successfully imported ${count} items from JSON backup!`);
+        const response = await apiClient.post('masters/items/bulk', { items: jsonItems });
+        queryClient.invalidateQueries({ queryKey: ['items'] });
+        alert(`Successfully imported ${response.data.count || jsonItems.length} items from JSON backup!`);
       }
     } catch (err: any) {
-      setActionError(err.message || 'Failed to parse JSON backup file.');
+      setActionError(err.response?.data?.error || err.message || 'Failed to parse JSON backup file.');
     } finally {
       if (jsonInputRef.current) jsonInputRef.current.value = '';
     }

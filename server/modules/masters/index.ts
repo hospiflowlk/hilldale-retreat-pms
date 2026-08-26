@@ -78,133 +78,210 @@ export const mastersRoutes: FastifyPluginAsync = async (fastify) => {
     return { id: null, name: '' };
   };
 
-  fastify.post('/items', async (request) => {
-    const data = request.body as any;
-    const itemType = data.type === 'RAW_MATERIAL' ? 'RAW' : (data.type || 'RESALE');
-    const resolvedCat = await resolveOrCreateCategoryId(data.categoryId, data.categoryName, itemType);
+  fastify.post('/items', async (request, reply) => {
+    try {
+      const data = request.body as any;
+      const itemType = data.type === 'RAW_MATERIAL' ? 'RAW' : (data.type || 'RESALE');
+      const resolvedCat = await resolveOrCreateCategoryId(data.categoryId, data.categoryName, itemType);
 
-    const insertPayload: any = {
-      name: data.name,
-      type: itemType,
-      categoryId: resolvedCat.id,
-      unit: data.unit || 'pcs',
-      costPrice: (data.costPriceUSD ?? data.costPrice ?? 0).toString(),
-      sellingPrice: (data.sellingPriceUSD ?? data.sellingPrice ?? 0).toString(),
-      stockLevel: (data.currentStock ?? data.stockLevel ?? 0).toString(),
-      reorderThreshold: (data.reorderThreshold ?? 0).toString(),
-      useInInvoices: data.useInInvoices !== undefined ? data.useInInvoices : (itemType === 'RESALE' || itemType === 'RECIPE'),
-      useInExpenses: data.useInExpenses !== undefined ? data.useInExpenses : (itemType === 'RAW' || itemType === 'RESALE' || itemType === 'EXPENSE'),
-      showInPos: data.showInPos !== undefined ? data.showInPos : (itemType === 'RESALE' || itemType === 'RECIPE'),
-      sortOrder: data.sortOrder ?? 0,
-      barcode: data.barcode || null,
-      description: data.description || null,
-    };
-    const result = await db.insert(items).values(insertPayload).returning();
-    const raw = result[0];
+      const insertPayload: any = {
+        name: data.name,
+        type: itemType,
+        categoryId: resolvedCat.id,
+        unit: data.unit || 'pcs',
+        costPrice: (data.costPriceUSD ?? data.costPrice ?? 0).toString(),
+        sellingPrice: (data.sellingPriceUSD ?? data.sellingPrice ?? 0).toString(),
+        stockLevel: (data.currentStock ?? data.stockLevel ?? 0).toString(),
+        reorderThreshold: (data.reorderThreshold ?? 0).toString(),
+        useInInvoices: data.useInInvoices !== undefined ? data.useInInvoices : (itemType === 'RESALE' || itemType === 'RECIPE'),
+        useInExpenses: data.useInExpenses !== undefined ? data.useInExpenses : (itemType === 'RAW' || itemType === 'RESALE' || itemType === 'EXPENSE'),
+        showInPos: data.showInPos !== undefined ? data.showInPos : (itemType === 'RESALE' || itemType === 'RECIPE'),
+        sortOrder: data.sortOrder ?? 0,
+        barcode: data.barcode || null,
+        description: data.description || null,
+      };
+      const result = await db.insert(items).values(insertPayload).returning();
+      const raw = result[0];
 
-    // Save BOM if provided
-    if (Array.isArray(data.bom) && data.bom.length > 0) {
-      await db.delete(itemBom).where(eq(itemBom.recipeItemId, raw.id));
-      for (const ingredient of data.bom) {
-        if (ingredient.ingredientItemId) {
-          await db.insert(itemBom).values({
-            recipeItemId: raw.id,
-            ingredientItemId: parseInt(ingredient.ingredientItemId),
-            quantityPerUnit: (ingredient.quantity ?? 1).toString(),
-            unit: ingredient.unit || 'pcs',
-          });
+      // Save BOM if provided
+      if (Array.isArray(data.bom) && data.bom.length > 0) {
+        await db.delete(itemBom).where(eq(itemBom.recipeItemId, raw.id));
+        for (const ingredient of data.bom) {
+          let parsedIngId = parseInt(ingredient.ingredientItemId);
+          if (isNaN(parsedIngId) && ingredient.ingredientName) {
+            const matched = await db.select({ id: items.id }).from(items).where(eq(items.name, ingredient.ingredientName));
+            if (matched.length > 0) parsedIngId = matched[0].id;
+          }
+          if (!isNaN(parsedIngId)) {
+            await db.insert(itemBom).values({
+              recipeItemId: raw.id,
+              ingredientItemId: parsedIngId,
+              quantityPerUnit: (ingredient.quantity ?? 1).toString(),
+              unit: ingredient.unit || 'pcs',
+            });
+          }
         }
       }
-    }
 
-    return {
-      id: raw.id.toString(),
-      name: raw.name,
-      type: raw.type,
-      categoryId: raw.categoryId ? raw.categoryId.toString() : '',
-      categoryName: resolvedCat.name || data.categoryName || '',
-      unit: raw.unit,
-      costPriceUSD: parseFloat(raw.costPrice || '0'),
-      sellingPriceUSD: parseFloat(raw.sellingPrice || '0'),
-      currentStock: parseFloat(raw.stockLevel || '0'),
-      reorderThreshold: parseFloat(raw.reorderThreshold || '0'),
-      isAvailable: true,
-      useInInvoices: raw.useInInvoices,
-      useInExpenses: raw.useInExpenses,
-      showInPos: raw.showInPos,
-      sortOrder: raw.sortOrder || 0,
-      barcode: raw.barcode || '',
-      description: raw.description || '',
-      bom: data.bom || [],
-    };
+      return {
+        id: raw.id.toString(),
+        name: raw.name,
+        type: raw.type,
+        categoryId: raw.categoryId ? raw.categoryId.toString() : '',
+        categoryName: resolvedCat.name || data.categoryName || '',
+        unit: raw.unit,
+        costPriceUSD: parseFloat(raw.costPrice || '0'),
+        sellingPriceUSD: parseFloat(raw.sellingPrice || '0'),
+        currentStock: parseFloat(raw.stockLevel || '0'),
+        reorderThreshold: parseFloat(raw.reorderThreshold || '0'),
+        isAvailable: true,
+        useInInvoices: raw.useInInvoices,
+        useInExpenses: raw.useInExpenses,
+        showInPos: raw.showInPos,
+        sortOrder: raw.sortOrder || 0,
+        barcode: raw.barcode || '',
+        description: raw.description || '',
+        bom: data.bom || [],
+      };
+    } catch (err: any) {
+      reply.status(400).send({ error: err.message || 'Failed to create item.' });
+    }
   });
 
-  fastify.put('/items/:id', async (request) => {
+  fastify.post('/items/bulk', async (request, reply) => {
+    const { items: itemsList } = request.body as { items: any[] };
+    if (!Array.isArray(itemsList) || itemsList.length === 0) {
+      return { success: true, count: 0 };
+    }
+
+    try {
+      let count = 0;
+      for (const data of itemsList) {
+        const itemType = data.type === 'RAW_MATERIAL' ? 'RAW' : (data.type || 'RESALE');
+        const resolvedCat = await resolveOrCreateCategoryId(data.categoryId, data.categoryName, itemType);
+
+        const insertPayload: any = {
+          name: data.name,
+          type: itemType,
+          categoryId: resolvedCat.id,
+          unit: data.unit || 'pcs',
+          costPrice: (data.costPriceUSD ?? data.costPrice ?? 0).toString(),
+          sellingPrice: (data.sellingPriceUSD ?? data.sellingPrice ?? 0).toString(),
+          stockLevel: (data.currentStock ?? data.stockLevel ?? 0).toString(),
+          reorderThreshold: (data.reorderThreshold ?? 0).toString(),
+          useInInvoices: data.useInInvoices !== undefined ? data.useInInvoices : (itemType === 'RESALE' || itemType === 'RECIPE'),
+          useInExpenses: data.useInExpenses !== undefined ? data.useInExpenses : (itemType === 'RAW' || itemType === 'RESALE' || itemType === 'EXPENSE'),
+          showInPos: data.showInPos !== undefined ? data.showInPos : (itemType === 'RESALE' || itemType === 'RECIPE'),
+          sortOrder: data.sortOrder ?? 0,
+          barcode: data.barcode || null,
+          description: data.description || null,
+        };
+
+        const result = await db.insert(items).values(insertPayload).returning();
+        const raw = result[0];
+
+        // Save BOM if provided
+        if (Array.isArray(data.bom) && data.bom.length > 0) {
+          for (const ingredient of data.bom) {
+            let parsedIngId = parseInt(ingredient.ingredientItemId);
+            if (isNaN(parsedIngId) && ingredient.ingredientName) {
+              const matched = await db.select({ id: items.id }).from(items).where(eq(items.name, ingredient.ingredientName));
+              if (matched.length > 0) parsedIngId = matched[0].id;
+            }
+            if (!isNaN(parsedIngId)) {
+              await db.insert(itemBom).values({
+                recipeItemId: raw.id,
+                ingredientItemId: parsedIngId,
+                quantityPerUnit: (ingredient.quantity ?? 1).toString(),
+                unit: ingredient.unit || 'pcs',
+              });
+            }
+          }
+        }
+        count++;
+      }
+      return { success: true, count };
+    } catch (err: any) {
+      reply.status(400).send({ error: err.message || 'Bulk import failed.' });
+    }
+  });
+
+  fastify.put('/items/:id', async (request, reply) => {
     const { id } = request.params as { id: string };
     const numId = parseInt(id);
     const data = request.body as any;
-    const updatePayload: any = {};
-    const itemType = data.type === 'RAW_MATERIAL' ? 'RAW' : (data.type || undefined);
 
-    let resolvedCatName = data.categoryName || '';
-    if (data.categoryId !== undefined || data.categoryName !== undefined) {
-      const resolvedCat = await resolveOrCreateCategoryId(data.categoryId, data.categoryName, itemType || 'RESALE');
-      updatePayload.categoryId = resolvedCat.id;
-      if (resolvedCat.name) resolvedCatName = resolvedCat.name;
-    }
+    try {
+      const updatePayload: any = {};
+      const itemType = data.type === 'RAW_MATERIAL' ? 'RAW' : (data.type || undefined);
 
-    if (data.name !== undefined) updatePayload.name = data.name;
-    if (data.type !== undefined) updatePayload.type = itemType;
-    if (data.unit !== undefined) updatePayload.unit = data.unit;
-    if (data.costPriceUSD !== undefined) updatePayload.costPrice = data.costPriceUSD.toString();
-    if (data.sellingPriceUSD !== undefined) updatePayload.sellingPrice = data.sellingPriceUSD.toString();
-    if (data.currentStock !== undefined) updatePayload.stockLevel = data.currentStock.toString();
-    if (data.reorderThreshold !== undefined) updatePayload.reorderThreshold = data.reorderThreshold.toString();
-    if (data.useInInvoices !== undefined) updatePayload.useInInvoices = data.useInInvoices;
-    if (data.useInExpenses !== undefined) updatePayload.useInExpenses = data.useInExpenses;
-    if (data.showInPos !== undefined) updatePayload.showInPos = data.showInPos;
-    if (data.sortOrder !== undefined) updatePayload.sortOrder = data.sortOrder;
-    if (data.barcode !== undefined) updatePayload.barcode = data.barcode;
-    if (data.description !== undefined) updatePayload.description = data.description;
+      let resolvedCatName = data.categoryName || '';
+      if (data.categoryId !== undefined || data.categoryName !== undefined) {
+        const resolvedCat = await resolveOrCreateCategoryId(data.categoryId, data.categoryName, itemType || 'RESALE');
+        updatePayload.categoryId = resolvedCat.id;
+        if (resolvedCat.name) resolvedCatName = resolvedCat.name;
+      }
 
-    const result = await db.update(items).set(updatePayload).where(eq(items.id, numId)).returning();
-    const raw = result[0];
+      if (data.name !== undefined) updatePayload.name = data.name;
+      if (data.type !== undefined) updatePayload.type = itemType;
+      if (data.unit !== undefined) updatePayload.unit = data.unit;
+      if (data.costPriceUSD !== undefined) updatePayload.costPrice = data.costPriceUSD.toString();
+      if (data.sellingPriceUSD !== undefined) updatePayload.sellingPrice = data.sellingPriceUSD.toString();
+      if (data.currentStock !== undefined) updatePayload.stockLevel = data.currentStock.toString();
+      if (data.reorderThreshold !== undefined) updatePayload.reorderThreshold = data.reorderThreshold.toString();
+      if (data.useInInvoices !== undefined) updatePayload.useInInvoices = data.useInInvoices;
+      if (data.useInExpenses !== undefined) updatePayload.useInExpenses = data.useInExpenses;
+      if (data.showInPos !== undefined) updatePayload.showInPos = data.showInPos;
+      if (data.sortOrder !== undefined) updatePayload.sortOrder = data.sortOrder;
+      if (data.barcode !== undefined) updatePayload.barcode = data.barcode;
+      if (data.description !== undefined) updatePayload.description = data.description;
 
-    // Save/Update BOM if provided
-    if (Array.isArray(data.bom)) {
-      await db.delete(itemBom).where(eq(itemBom.recipeItemId, numId));
-      for (const ingredient of data.bom) {
-        if (ingredient.ingredientItemId) {
-          await db.insert(itemBom).values({
-            recipeItemId: numId,
-            ingredientItemId: parseInt(ingredient.ingredientItemId),
-            quantityPerUnit: (ingredient.quantity ?? 1).toString(),
-            unit: ingredient.unit || 'pcs',
-          });
+      const result = await db.update(items).set(updatePayload).where(eq(items.id, numId)).returning();
+      const raw = result[0];
+
+      // Save/Update BOM if provided
+      if (Array.isArray(data.bom)) {
+        await db.delete(itemBom).where(eq(itemBom.recipeItemId, numId));
+        for (const ingredient of data.bom) {
+          let parsedIngId = parseInt(ingredient.ingredientItemId);
+          if (isNaN(parsedIngId) && ingredient.ingredientName) {
+            const matched = await db.select({ id: items.id }).from(items).where(eq(items.name, ingredient.ingredientName));
+            if (matched.length > 0) parsedIngId = matched[0].id;
+          }
+          if (!isNaN(parsedIngId)) {
+            await db.insert(itemBom).values({
+              recipeItemId: numId,
+              ingredientItemId: parsedIngId,
+              quantityPerUnit: (ingredient.quantity ?? 1).toString(),
+              unit: ingredient.unit || 'pcs',
+            });
+          }
         }
       }
-    }
 
-    return {
-      id: raw.id.toString(),
-      name: raw.name,
-      type: raw.type,
-      categoryId: raw.categoryId ? raw.categoryId.toString() : '',
-      categoryName: resolvedCatName,
-      unit: raw.unit,
-      costPriceUSD: parseFloat(raw.costPrice || '0'),
-      sellingPriceUSD: parseFloat(raw.sellingPrice || '0'),
-      currentStock: parseFloat(raw.stockLevel || '0'),
-      reorderThreshold: parseFloat(raw.reorderThreshold || '0'),
-      isAvailable: true,
-      useInInvoices: raw.useInInvoices,
-      useInExpenses: raw.useInExpenses,
-      showInPos: raw.showInPos,
-      sortOrder: raw.sortOrder || 0,
-      barcode: raw.barcode || '',
-      description: raw.description || '',
-      bom: data.bom || [],
-    };
+      return {
+        id: raw.id.toString(),
+        name: raw.name,
+        type: raw.type,
+        categoryId: raw.categoryId ? raw.categoryId.toString() : '',
+        categoryName: resolvedCatName,
+        unit: raw.unit,
+        costPriceUSD: parseFloat(raw.costPrice || '0'),
+        sellingPriceUSD: parseFloat(raw.sellingPrice || '0'),
+        currentStock: parseFloat(raw.stockLevel || '0'),
+        reorderThreshold: parseFloat(raw.reorderThreshold || '0'),
+        isAvailable: true,
+        useInInvoices: raw.useInInvoices,
+        useInExpenses: raw.useInExpenses,
+        showInPos: raw.showInPos,
+        sortOrder: raw.sortOrder || 0,
+        barcode: raw.barcode || '',
+        description: raw.description || '',
+        bom: data.bom || [],
+      };
+    } catch (err: any) {
+      reply.status(400).send({ error: err.message || 'Failed to update item.' });
+    }
   });
 
   fastify.delete('/items/:id', async (request, reply) => {
