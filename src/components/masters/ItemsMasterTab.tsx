@@ -104,15 +104,22 @@ export const ItemsMasterTab: React.FC = () => {
         return false;
       }
 
-      // Search Filter
+      // Enhanced Multi-Token Search Query
       if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase();
-        return (
-          item.name.toLowerCase().includes(q) ||
-          item.categoryName.toLowerCase().includes(q) ||
-          item.description?.toLowerCase().includes(q) ||
-          item.barcode?.toLowerCase().includes(q)
-        );
+        const tokens = searchQuery.toLowerCase().trim().split(/\s+/);
+        const targetString = [
+          item.name,
+          item.categoryName,
+          item.type,
+          item.barcode || '',
+          item.description || '',
+          item.unit || '',
+          item.sellingPriceUSD ? `$${item.sellingPriceUSD}` : '',
+          item.sortOrder?.toString() || '',
+          item.showInPos ? 'pos' : 'hidden'
+        ].join(' ').toLowerCase();
+
+        return tokens.every(token => targetString.includes(token));
       }
 
       return true;
@@ -260,163 +267,171 @@ export const ItemsMasterTab: React.FC = () => {
         </div>
       )}
 
-      {/* Filter & Search Toolbar */}
-      <div className="bg-white p-4 rounded-2xl border border-border shadow-xs flex flex-col md:flex-row items-center justify-between gap-3">
-        {/* Search & Category Filter */}
-        <div className="flex items-center gap-2 w-full md:w-auto flex-1">
-          <div className="relative flex-1">
-            <Search className="w-4 h-4 text-secondary absolute left-3.5 top-3" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search items, ingredients, recipes, barcode..."
-              className="w-full bg-surface-muted border border-border rounded-xl pl-10 pr-3.5 py-2 text-xs text-text placeholder-secondary/60 focus:outline-hidden focus:border-primary focus:bg-white transition"
-            />
+      {/* Redesigned Executive Control Panel & Search Bar */}
+      <div className="bg-white p-4 sm:p-5 rounded-2xl border border-border shadow-xs space-y-3.5">
+        {/* Tier 1: Search Input & Category Filter & Sort & Primary Actions */}
+        <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
+          
+          {/* Left: Search Bar & Dropdowns */}
+          <div className="flex flex-col sm:flex-row items-center gap-2.5 flex-1 w-full">
+            {/* Search Input Box */}
+            <div className="relative flex-1 w-full min-w-[240px]">
+              <Search className="w-4 h-4 text-secondary/70 absolute left-3.5 top-3" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search items by name, category, barcode, SKU, or notes..."
+                className="w-full bg-surface-muted/60 border border-border rounded-xl pl-10 pr-9 py-2 text-xs text-text placeholder-secondary/60 focus:outline-hidden focus:border-primary focus:bg-white transition shadow-2xs"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-3 top-2.5 text-secondary hover:text-text p-0.5 rounded-full hover:bg-border/60 transition cursor-pointer"
+                  title="Clear search"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+
+            {/* Category Filter Dropdown */}
+            <div className="w-full sm:w-auto shrink-0">
+              <select
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                className="w-full sm:w-auto bg-surface-muted/60 border border-border rounded-xl px-3 py-2 text-xs font-medium text-text focus:outline-hidden focus:border-primary focus:bg-white cursor-pointer shadow-2xs"
+              >
+                <option value="ALL">All Categories ({masterCategories.length})</option>
+                {masterCategories.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.parentId ? `└─ ${c.name}` : c.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Sort Order Selector */}
+            <div className="w-full sm:w-auto shrink-0">
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as any)}
+                className="w-full sm:w-auto bg-surface-muted/60 border border-border rounded-xl px-3 py-2 text-xs font-semibold text-text focus:outline-hidden focus:border-primary focus:bg-white cursor-pointer shadow-2xs"
+                title="Sort item display order"
+              >
+                <option value="EXCEL">🔢 Custom Order (Excel No.)</option>
+                <option value="NAME_ASC">🔤 Name (A - Z)</option>
+                <option value="CATEGORY">📁 Master Category</option>
+                <option value="PRICE_DESC">💵 Price (High to Low)</option>
+                <option value="STOCK_ASC">📦 Stock Level</option>
+              </select>
+            </div>
           </div>
 
-          <select
-            value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
-            className="bg-surface-muted border border-border rounded-xl px-3 py-2 text-xs text-text focus:outline-hidden focus:border-primary focus:bg-white"
-          >
-            <option value="ALL">All Categories</option>
-            {masterCategories.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.parentId ? `└─ ${c.name}` : c.name}
-              </option>
-            ))}
-          </select>
+          {/* Right: Actions (Export, Import, New Item) */}
+          <div className="flex items-center gap-2 shrink-0 self-end lg:self-auto w-full sm:w-auto justify-end">
+            <button
+              onClick={() => exportMasterItemsToExcel(filteredItems)}
+              className="px-3 py-2 rounded-xl text-xs font-semibold bg-white text-secondary hover:text-text border border-border hover:bg-surface-muted transition cursor-pointer flex items-center gap-1.5 shadow-2xs"
+              title="Export filtered items to Excel"
+            >
+              <Download className="w-3.5 h-3.5 text-emerald-700" />
+              <span>Export</span>
+            </button>
 
-          {/* Sort Order Selector */}
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value as any)}
-            className="bg-surface-muted border border-border rounded-xl px-3 py-2 text-xs font-semibold text-text focus:outline-hidden focus:border-primary focus:bg-white cursor-pointer"
-            title="Sort item display order"
-          >
-            <option value="EXCEL">🔢 Custom Order (Excel No.)</option>
-            <option value="NAME_ASC">🔤 Name (A - Z)</option>
-            <option value="CATEGORY">📁 Master Category</option>
-            <option value="PRICE_DESC">💵 Price (High to Low)</option>
-            <option value="STOCK_ASC">📦 Stock Level</option>
-          </select>
+            <button
+              onClick={() => setIsImportModalOpen(true)}
+              className="px-3 py-2 rounded-xl text-xs font-semibold bg-white text-secondary hover:text-text border border-border hover:bg-surface-muted transition cursor-pointer flex items-center gap-1.5 shadow-2xs"
+              title="Import items from Excel"
+            >
+              <Upload className="w-3.5 h-3.5 text-sky-700" />
+              <span>Import</span>
+            </button>
+
+            <button
+              onClick={() => { setItemToEdit(null); setIsModalOpen(true); }}
+              className="px-4 py-2 rounded-xl text-xs font-bold bg-primary hover:bg-[#4d5541] text-white transition cursor-pointer flex items-center gap-1.5 shadow-xs shrink-0"
+            >
+              <Plus className="w-4 h-4" />
+              <span>New Item</span>
+            </button>
+          </div>
         </div>
 
-        {/* Filter Pills */}
-        <div className="flex items-center gap-1.5 w-full md:w-auto overflow-x-auto">
-          <button
-            onClick={() => setActiveFilterTab('ALL')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
-              activeFilterTab === 'ALL'
-                ? 'bg-text text-white shadow-xs'
-                : 'bg-surface-muted text-secondary hover:text-text'
-            }`}
-          >
-            All ({masterItems.length})
-          </button>
-          <button
-            onClick={() => setActiveFilterTab('RAW')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1 ${
-              activeFilterTab === 'RAW'
-                ? 'bg-emerald-700 text-white shadow-xs'
-                : 'bg-surface-muted text-secondary hover:text-text'
-            }`}
-          >
-            <Package className="w-3.5 h-3.5" />
-            <span>Raw Stock ({rawCount})</span>
-          </button>
-          <button
-            onClick={() => setActiveFilterTab('RESALE')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1 ${
-              activeFilterTab === 'RESALE'
-                ? 'bg-sky-700 text-white shadow-xs'
-                : 'bg-surface-muted text-secondary hover:text-text'
-            }`}
-          >
-            <TrendingUp className="w-3.5 h-3.5" />
-            <span>Direct Resale ({resaleCount})</span>
-          </button>
-          <button
-            onClick={() => setActiveFilterTab('RECIPE')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1 ${
-              activeFilterTab === 'RECIPE'
-                ? 'bg-amber-800 text-white shadow-xs'
-                : 'bg-surface-muted text-secondary hover:text-text'
-            }`}
-          >
-            <ChefHat className="w-3.5 h-3.5" />
-            <span>Recipes (BOM) ({recipeCount})</span>
-          </button>
-          <button
-            onClick={() => setActiveFilterTab('EXPENSE')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1 ${
-              activeFilterTab === 'EXPENSE'
-                ? 'bg-purple-800 text-white shadow-xs'
-                : 'bg-surface-muted text-secondary hover:text-text'
-            }`}
-          >
-            <Briefcase className="w-3.5 h-3.5" />
-            <span>Non-Stock Exp. ({expenseCount})</span>
-          </button>
-          <button
-            onClick={() => setActiveFilterTab('LOW_STOCK')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1 ${
-              activeFilterTab === 'LOW_STOCK'
-                ? 'bg-rose-700 text-white shadow-xs'
-                : 'bg-surface-muted text-secondary hover:text-rose-700'
-            }`}
-          >
-            <AlertTriangle className="w-3.5 h-3.5" />
-            <span>Low Stock ({lowStockItems.length})</span>
-          </button>
-        </div>
+        {/* Tier 2: Classification Filter Tabs & Live Result Count */}
+        <div className="pt-2.5 border-t border-border/60 flex items-center justify-between gap-2 overflow-x-auto no-scrollbar">
+          <div className="flex items-center gap-1.5 shrink-0">
+            <button
+              onClick={() => setActiveFilterTab('ALL')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+                activeFilterTab === 'ALL'
+                  ? 'bg-text text-white shadow-2xs'
+                  : 'bg-surface-muted text-secondary hover:text-text'
+              }`}
+            >
+              All ({masterItems.length})
+            </button>
+            <button
+              onClick={() => setActiveFilterTab('RAW')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
+                activeFilterTab === 'RAW'
+                  ? 'bg-emerald-700 text-white shadow-2xs'
+                  : 'bg-surface-muted text-secondary hover:text-text'
+              }`}
+            >
+              <Package className="w-3.5 h-3.5" />
+              <span>Raw Stock ({rawCount})</span>
+            </button>
+            <button
+              onClick={() => setActiveFilterTab('RESALE')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
+                activeFilterTab === 'RESALE'
+                  ? 'bg-sky-700 text-white shadow-2xs'
+                  : 'bg-surface-muted text-secondary hover:text-text'
+              }`}
+            >
+              <TrendingUp className="w-3.5 h-3.5" />
+              <span>Direct Resale ({resaleCount})</span>
+            </button>
+            <button
+              onClick={() => setActiveFilterTab('RECIPE')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
+                activeFilterTab === 'RECIPE'
+                  ? 'bg-amber-800 text-white shadow-2xs'
+                  : 'bg-surface-muted text-secondary hover:text-text'
+              }`}
+            >
+              <ChefHat className="w-3.5 h-3.5" />
+              <span>Recipes (BOM) ({recipeCount})</span>
+            </button>
+            <button
+              onClick={() => setActiveFilterTab('EXPENSE')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
+                activeFilterTab === 'EXPENSE'
+                  ? 'bg-purple-800 text-white shadow-2xs'
+                  : 'bg-surface-muted text-secondary hover:text-text'
+              }`}
+            >
+              <Briefcase className="w-3.5 h-3.5" />
+              <span>Non-Stock Exp. ({expenseCount})</span>
+            </button>
+            <button
+              onClick={() => setActiveFilterTab('LOW_STOCK')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
+                activeFilterTab === 'LOW_STOCK'
+                  ? 'bg-rose-700 text-white shadow-2xs'
+                  : 'bg-surface-muted text-secondary hover:text-rose-700'
+              }`}
+            >
+              <AlertTriangle className="w-3.5 h-3.5" />
+              <span>Low Stock ({lowStockItems.length})</span>
+            </button>
+          </div>
 
-        {/* Action Buttons: Export, Import, New Item */}
-        <div className="flex items-center gap-2 w-full md:w-auto shrink-0 relative" ref={actionsRef}>
-          <button
-            onClick={() => setIsActionsOpen(!isActionsOpen)}
-            className="px-3 py-2 rounded-xl text-xs font-semibold bg-white hover:bg-surface-muted text-secondary hover:text-text border border-border transition cursor-pointer shadow-2xs flex items-center justify-center shrink-0"
-            title="More Actions"
-          >
-            <MoreVertical className="w-4 h-4" />
-          </button>
-          
-          {isActionsOpen && (
-            <div className="absolute top-full mt-2 right-[90px] md:right-0 z-50 w-48 bg-white border border-border rounded-xl shadow-lg overflow-hidden flex flex-col py-1">
-              <button
-                onClick={() => { exportMasterItemsToExcel(masterItems); setIsActionsOpen(false); }}
-                className="px-4 py-2.5 text-xs font-semibold text-secondary hover:bg-surface-muted hover:text-text transition cursor-pointer flex items-center gap-2 w-full text-left"
-              >
-                <Download className="w-4 h-4 text-emerald-700" />
-                <span>Export Excel</span>
-              </button>
-              <button
-                onClick={() => { setIsImportModalOpen(true); setIsActionsOpen(false); }}
-                className="px-4 py-2.5 text-xs font-semibold text-secondary hover:bg-surface-muted hover:text-text transition cursor-pointer flex items-center gap-2 w-full text-left"
-              >
-                <Upload className="w-4 h-4 text-primary" />
-                <span>Import Excel</span>
-              </button>
-              <div className="h-px bg-border my-1 w-full" />
-              <button
-                onClick={() => { handleDeleteAll(); setIsActionsOpen(false); }}
-                disabled={masterItems.length === 0}
-                className="px-4 py-2.5 text-xs font-semibold text-rose-600 hover:bg-rose-50 transition cursor-pointer flex items-center gap-2 w-full text-left disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <Trash2 className="w-4 h-4" />
-                <span>Delete All</span>
-              </button>
-            </div>
-          )}
-
-          <button
-            onClick={() => { setItemToEdit(null); setIsModalOpen(true); }}
-            className="px-4 py-2 rounded-xl text-xs font-bold bg-primary hover:bg-[#4d5541] text-white transition cursor-pointer shadow-xs flex items-center justify-center gap-1.5 shrink-0"
-          >
-            <Plus className="w-4 h-4" />
-            <span>New Item</span>
-          </button>
+          <span className="text-[11px] text-secondary font-medium shrink-0 ml-auto hidden sm:inline">
+            Showing <strong className="text-text font-mono">{filteredItems.length}</strong> of {masterItems.length} items
+          </span>
         </div>
       </div>
 
