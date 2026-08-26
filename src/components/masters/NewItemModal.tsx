@@ -27,20 +27,14 @@ interface NewItemModalProps {
   initialType?: ItemType;
 }
 
-const UNITS_OF_MEASURE: { value: UnitOfMeasure; label: string; group: string }[] = [
-  { value: 'pcs', label: 'Pieces (pcs)', group: 'Count' },
-  { value: 'service', label: 'Service / Lump Sum', group: 'Service' },
-  { value: 'month', label: 'Monthly Cycle', group: 'Service' },
-  { value: 'trip', label: 'Trip / Run', group: 'Service' },
-  { value: 'box', label: 'Box / Carton', group: 'Count' },
-  { value: 'pack', label: 'Pack / Ream', group: 'Count' },
-  { value: 'portion', label: 'Portion / Plate', group: 'Count' },
-  { value: 'bottle', label: 'Bottle', group: 'Count' },
-  { value: 'can', label: 'Can', group: 'Count' },
-  { value: 'l', label: 'Liters (L)', group: 'Volume' },
-  { value: 'ml', label: 'Milliliters (ml)', group: 'Volume' },
-  { value: 'kg', label: 'Kilograms (kg)', group: 'Weight' },
-  { value: 'g', label: 'Grams (g)', group: 'Weight' },
+const UNITS_OF_MEASURE: { value: UnitOfMeasure; label: string }[] = [
+  { value: 'pcs', label: 'pcs' },
+  { value: 'ml', label: 'ml' },
+  { value: 'g', label: 'g' },
+  { value: 'kg', label: 'kg' },
+  { value: 'bottle', label: 'bottle' },
+  { value: 'shot', label: 'shot' },
+  { value: 'unit', label: 'unit' },
 ];
 
 export const NewItemModal: React.FC<NewItemModalProps> = ({
@@ -95,8 +89,6 @@ export const NewItemModal: React.FC<NewItemModalProps> = ({
       let unitCost = raw.costPriceUSD;
       if (raw.unit === 'kg' && ing.unit === 'g') unitCost = raw.costPriceUSD / 1000;
       if (raw.unit === 'g' && ing.unit === 'kg') unitCost = raw.costPriceUSD * 1000;
-      if (raw.unit === 'l' && ing.unit === 'ml') unitCost = raw.costPriceUSD / 1000;
-      if (raw.unit === 'ml' && ing.unit === 'l') unitCost = raw.costPriceUSD * 1000;
 
       return sum + (unitCost * ing.quantity);
     }, 0);
@@ -127,7 +119,7 @@ export const NewItemModal: React.FC<NewItemModalProps> = ({
         : masterCategories[0];
       setCategoryId(defaultCat?.id || '');
 
-      setUnit(initialType === 'RECIPE' ? 'portion' : initialType === 'EXPENSE' ? 'service' : 'pcs');
+      setUnit('pcs');
       setCostPriceUSD('');
       setSellingPriceUSD('');
       setCurrentStock(initialType === 'RECIPE' ? '999' : initialType === 'EXPENSE' ? '0' : '10');
@@ -290,10 +282,7 @@ export const NewItemModal: React.FC<NewItemModalProps> = ({
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               <button
                 type="button"
-                onClick={() => {
-                  setType('RAW');
-                  if (unit === 'service' || unit === 'month' || unit === 'portion') setUnit('kg');
-                }}
+                onClick={() => setType('RAW')}
                 className={`p-3 rounded-xl text-left border transition cursor-pointer flex flex-col justify-between gap-1.5 ${
                   type === 'RAW' || type === 'RAW_MATERIAL'
                     ? 'bg-emerald-50 border-emerald-600 text-emerald-900 shadow-xs'
@@ -309,10 +298,7 @@ export const NewItemModal: React.FC<NewItemModalProps> = ({
 
               <button
                 type="button"
-                onClick={() => {
-                  setType('RESALE');
-                  if (unit === 'service' || unit === 'month' || unit === 'portion') setUnit('pcs');
-                }}
+                onClick={() => setType('RESALE')}
                 className={`p-3 rounded-xl text-left border transition cursor-pointer flex flex-col justify-between gap-1.5 ${
                   type === 'RESALE'
                     ? 'bg-sky-50 border-sky-600 text-sky-900 shadow-xs'
@@ -328,10 +314,7 @@ export const NewItemModal: React.FC<NewItemModalProps> = ({
 
               <button
                 type="button"
-                onClick={() => {
-                  setType('RECIPE');
-                  setUnit('portion');
-                }}
+                onClick={() => setType('RECIPE')}
                 className={`p-3 rounded-xl text-left border transition cursor-pointer flex flex-col justify-between gap-1.5 ${
                   type === 'RECIPE'
                     ? 'bg-amber-50 border-amber-700 text-amber-900 shadow-xs'
@@ -349,7 +332,6 @@ export const NewItemModal: React.FC<NewItemModalProps> = ({
                 type="button"
                 onClick={() => {
                   setType('EXPENSE');
-                  setUnit('service');
                   const expCat = masterCategories.find(c => c.type === 'EXPENSE');
                   if (expCat) setCategoryId(expCat.id);
                 }}

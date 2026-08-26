@@ -212,7 +212,7 @@ export const INITIAL_MASTER_ITEMS: MasterItem[] = [
     type: 'RESALE',
     categoryId: 'cat-cogs-beverages',
     categoryName: 'Beverages & Packaged Drinks',
-    unit: 'can',
+    unit: 'pcs',
     costPriceUSD: 0.65,
     sellingPriceUSD: 2.50,
     currentStock: 48,
@@ -229,7 +229,7 @@ export const INITIAL_MASTER_ITEMS: MasterItem[] = [
     type: 'RESALE',
     categoryId: 'cat-cogs-beverages',
     categoryName: 'Beverages & Packaged Drinks',
-    unit: 'can',
+    unit: 'pcs',
     costPriceUSD: 0.65,
     sellingPriceUSD: 2.50,
     currentStock: 8, // Low Stock Alert Triggered!
@@ -280,7 +280,7 @@ export const INITIAL_MASTER_ITEMS: MasterItem[] = [
     type: 'RECIPE',
     categoryId: 'cat-fb-food-rev',
     categoryName: 'Restaurant Food Revenue',
-    unit: 'portion',
+    unit: 'unit',
     costPriceUSD: 2.35, // Computed from BOM sum
     sellingPriceUSD: 11.50,
     currentStock: 999, // Virtual indicator for made-to-order recipes
@@ -298,8 +298,8 @@ export const INITIAL_MASTER_ITEMS: MasterItem[] = [
       {
         ingredientItemId: 'item-raw-oil',
         ingredientName: 'Pure Sunflower Cooking Oil',
-        quantity: 0.02, // 20 ml (0.02 L)
-        unit: 'l',
+        quantity: 20, // 20 ml
+        unit: 'ml',
         costEstimateUSD: 0.06
       },
       {
@@ -326,7 +326,7 @@ export const INITIAL_MASTER_ITEMS: MasterItem[] = [
     type: 'RECIPE',
     categoryId: 'cat-fb-food-rev',
     categoryName: 'Restaurant Food Revenue',
-    unit: 'portion',
+    unit: 'unit',
     costPriceUSD: 1.95,
     sellingPriceUSD: 9.50,
     currentStock: 999,
@@ -351,8 +351,8 @@ export const INITIAL_MASTER_ITEMS: MasterItem[] = [
       {
         ingredientItemId: 'item-raw-oil',
         ingredientName: 'Pure Sunflower Cooking Oil',
-        quantity: 0.03, // 30 ml
-        unit: 'l',
+        quantity: 30, // 30 ml
+        unit: 'ml',
         costEstimateUSD: 0.10
       },
       {
@@ -372,7 +372,7 @@ export const INITIAL_MASTER_ITEMS: MasterItem[] = [
     type: 'RECIPE',
     categoryId: 'cat-fb-bev-rev',
     categoryName: 'Bar & Beverage Revenue',
-    unit: 'portion',
+    unit: 'unit',
     costPriceUSD: 0.25,
     sellingPriceUSD: 3.50,
     currentStock: 999,
@@ -399,7 +399,7 @@ export const INITIAL_MASTER_ITEMS: MasterItem[] = [
     type: 'EXPENSE',
     categoryId: 'cat-opex-parent',
     categoryName: 'Operational Overheads',
-    unit: 'month',
+    unit: 'unit',
     costPriceUSD: 280.00,
     sellingPriceUSD: 0,
     currentStock: 0,
@@ -415,7 +415,7 @@ export const INITIAL_MASTER_ITEMS: MasterItem[] = [
     type: 'EXPENSE',
     categoryId: 'cat-opex-parent',
     categoryName: 'Operational Overheads',
-    unit: 'l',
+    unit: 'ml',
     costPriceUSD: 1.15,
     sellingPriceUSD: 0,
     currentStock: 0,
@@ -431,7 +431,7 @@ export const INITIAL_MASTER_ITEMS: MasterItem[] = [
     type: 'EXPENSE',
     categoryId: 'cat-opex-parent',
     categoryName: 'Operational Overheads',
-    unit: 'month',
+    unit: 'unit',
     costPriceUSD: 310.00,
     sellingPriceUSD: 0,
     currentStock: 0,
@@ -447,7 +447,7 @@ export const INITIAL_MASTER_ITEMS: MasterItem[] = [
     type: 'EXPENSE',
     categoryId: 'cat-opex-parent',
     categoryName: 'Operational Overheads',
-    unit: 'box',
+    unit: 'unit',
     costPriceUSD: 24.50,
     sellingPriceUSD: 0,
     currentStock: 0,
@@ -463,7 +463,7 @@ export const INITIAL_MASTER_ITEMS: MasterItem[] = [
     type: 'EXPENSE',
     categoryId: 'cat-opex-parent',
     categoryName: 'Operational Overheads',
-    unit: 'pack',
+    unit: 'unit',
     costPriceUSD: 8.50,
     sellingPriceUSD: 0,
     currentStock: 0,

@@ -115,7 +115,7 @@ export const downloadSampleItemTemplateExcel = () => {
       'Item / Service Name': 'Chicken Biryani Special',
       'Item Classification & Role': 'RECIPE (BOM)',
       'Master Category': 'Main Courses & Rice',
-      'Unit of Measure': 'portion',
+      'Unit of Measure': 'unit',
       'Cost Price (USD)': 2.50,
       'Selling Price (USD)': 9.50,
       'Current Stock Level': 0,
@@ -149,7 +149,7 @@ export const downloadSampleItemTemplateExcel = () => {
       'Item / Service Name': 'Electricity & Power Grid (CEB)',
       'Item Classification & Role': 'NON-STOCK EXP.',
       'Master Category': 'Operational Overheads',
-      'Unit of Measure': 'month',
+      'Unit of Measure': 'unit',
       'Cost Price (USD)': 280.00,
       'Selling Price (USD)': 0,
       'Current Stock Level': 0,
@@ -176,7 +176,7 @@ export const downloadSampleItemTemplateExcel = () => {
     },
     {
       'Field Name': 'Unit of Measure',
-      'Allowed Options / Format': 'pcs | kg | g | l | ml | portion | bottle | can | pack | tray | box | service | month | trip',
+      'Allowed Options / Format': 'pcs | ml | g | kg | bottle | shot | unit',
       'Description & Rules': 'Defaults to "pcs" if unrecognized.'
     },
     {
@@ -306,7 +306,7 @@ export const parseItemsFromExcel = async (
           const categoryName = String(row['Master Category'] || row['Category'] || row['Category Name'] || row['category'] || 'General').trim();
           
           let unit = String(row['Unit of Measure'] || row['Unit'] || row['unit'] || 'pcs').trim().toLowerCase();
-          const validUnits: UnitOfMeasure[] = ['pcs', 'kg', 'g', 'l', 'ml', 'portion', 'bottle', 'can', 'pack', 'tray', 'box', 'service', 'month', 'trip'];
+          const validUnits: UnitOfMeasure[] = ['pcs', 'ml', 'g', 'kg', 'bottle', 'shot', 'unit'];
           if (!validUnits.includes(unit as UnitOfMeasure)) {
             unit = 'pcs';
           }
