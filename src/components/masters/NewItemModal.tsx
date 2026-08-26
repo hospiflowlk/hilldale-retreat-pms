@@ -330,11 +330,7 @@ export const NewItemModal: React.FC<NewItemModalProps> = ({
 
               <button
                 type="button"
-                onClick={() => {
-                  setType('EXPENSE');
-                  const expCat = masterCategories.find(c => c.type === 'EXPENSE');
-                  if (expCat) setCategoryId(expCat.id);
-                }}
+                onClick={() => setType('EXPENSE')}
                 className={`p-3 rounded-xl text-left border transition cursor-pointer flex flex-col justify-between gap-1.5 ${
                   type === 'EXPENSE'
                     ? 'bg-purple-50 border-purple-700 text-purple-900 shadow-xs'
@@ -343,9 +339,9 @@ export const NewItemModal: React.FC<NewItemModalProps> = ({
               >
                 <div className="flex items-center gap-1.5">
                   <Briefcase className="w-4 h-4 text-purple-700 shrink-0" />
-                  <span className="text-[11px] font-bold">NON-STOCK EXP.</span>
+                  <span className="text-[11px] font-bold">NON-STOCK / SERVICE</span>
                 </div>
-                <div className="text-[10px] opacity-80 leading-tight">Utilities, EPF, services, no inventory</div>
+                <div className="text-[10px] opacity-80 leading-tight">Room tariffs, guest services, utilities & overheads (No inventory)</div>
               </button>
             </div>
           </div>
@@ -361,7 +357,7 @@ export const NewItemModal: React.FC<NewItemModalProps> = ({
                 required
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder={type === 'EXPENSE' ? 'e.g. Electricity (CEB), Petrol 92 Octane, EPF/ETF, A4 Paper' : 'e.g. Grilled Chicken Breast, Coke Can, Ceylon Tea Leaves'}
+                placeholder={type === 'EXPENSE' ? 'e.g. Single Deluxe Room (BB), Spa Treatment, Electricity (CEB), EPF/ETF' : 'e.g. Grilled Chicken Breast, Coke Can, Ceylon Tea Leaves'}
                 className="w-full bg-surface-muted border border-border rounded-xl px-3.5 py-2.5 text-xs text-text focus:outline-hidden focus:border-primary focus:bg-white transition"
               />
             </div>

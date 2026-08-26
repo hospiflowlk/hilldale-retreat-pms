@@ -257,11 +257,11 @@ export const ItemsMasterTab: React.FC = () => {
           className={`bg-white p-3.5 rounded-2xl border transition cursor-pointer shadow-2xs ${activeFilterTab === 'EXPENSE' ? 'border-purple-600 ring-1 ring-purple-600/20' : 'border-border'}`}
         >
           <div className="flex items-center justify-between text-secondary mb-1">
-            <span className="text-[10px] font-bold uppercase tracking-wider">Non-Stock Exp.</span>
+            <span className="text-[10px] font-bold uppercase tracking-wider">Non-Stock / Service</span>
             <Briefcase className="w-4 h-4 text-purple-700" />
           </div>
           <div className="text-xl font-bold font-serif text-purple-900">{expenseCount}</div>
-          <div className="text-[10px] text-secondary mt-0.5">Utilities, EPF, services</div>
+          <div className="text-[10px] text-secondary mt-0.5">Room tariffs, services & overheads</div>
         </div>
 
         <div 
@@ -502,7 +502,7 @@ export const ItemsMasterTab: React.FC = () => {
               }`}
             >
               <Briefcase className="w-3.5 h-3.5" />
-              <span>Non-Stock Exp. ({expenseCount})</span>
+              <span>Non-Stock / Services ({expenseCount})</span>
             </button>
             <button
               onClick={() => setActiveFilterTab('LOW_STOCK')}
@@ -611,7 +611,7 @@ export const ItemsMasterTab: React.FC = () => {
                               </>
                             ) : isExpense ? (
                               <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-50 text-purple-700 border border-purple-200">
-                                Non-Stock Exp.
+                                Non-Stock / Service
                               </span>
                             ) : item.type === 'RAW' || item.type === 'RAW_MATERIAL' ? (
                               <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">

@@ -35,7 +35,7 @@ export const exportMasterItemsToExcel = (items: MasterItem[], customFileName?: s
     if (type === 'RAW' || type === 'RAW_MATERIAL') return 'RAW STOCK';
     if (type === 'RESALE') return 'DIRECT RESALE';
     if (type === 'RECIPE') return 'RECIPE (BOM)';
-    if (type === 'EXPENSE') return 'NON-STOCK EXP.';
+    if (type === 'EXPENSE') return 'NON-STOCK / SERVICE';
     return type;
   };
 
