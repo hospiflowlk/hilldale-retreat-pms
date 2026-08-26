@@ -18,6 +18,7 @@ async function migrateItemsSchema() {
       ADD COLUMN IF NOT EXISTS use_in_invoices boolean DEFAULT true,
       ADD COLUMN IF NOT EXISTS use_in_expenses boolean DEFAULT true,
       ADD COLUMN IF NOT EXISTS show_in_pos boolean DEFAULT true,
+      ADD COLUMN IF NOT EXISTS sort_order integer DEFAULT 0,
       ADD COLUMN IF NOT EXISTS barcode varchar(100),
       ADD COLUMN IF NOT EXISTS description text;
     `;

@@ -15,6 +15,7 @@ export interface ParsedItemRow {
   useInInvoices?: boolean;
   useInExpenses?: boolean;
   showInPos?: boolean;
+  sortOrder?: number;
   barcode?: string;
   description?: string;
   isAvailable: boolean;
@@ -40,7 +41,7 @@ export const exportMasterItemsToExcel = (items: MasterItem[], customFileName?: s
 
   // Format data for sheet
   const data = items.map((item, idx) => ({
-    'No': idx + 1,
+    'No': item.sortOrder || (idx + 1),
     'Item ID': item.id,
     'Item / Service Name': item.name,
     'Item Classification & Role': formatItemType(item.type),
@@ -320,6 +321,8 @@ export const parseItemsFromExcel = async (
           const rawStatus = String(row['Status'] || row['Active'] || row['status'] || 'Active').trim().toLowerCase();
           const isAvailable = rawStatus !== 'inactive' && rawStatus !== 'false' && rawStatus !== '0' && rawStatus !== 'no';
 
+          const rawSortOrder = parseInt(row['No'] || row['No.'] || row['Sort Order'] || row['Sequence'] || '') || (idx + 1);
+
           // Validation
           if (!name) {
             errors.push('Item Name is required');
@@ -346,6 +349,7 @@ export const parseItemsFromExcel = async (
             useInInvoices,
             useInExpenses,
             showInPos,
+            sortOrder: rawSortOrder,
             barcode: barcode || undefined,
             description: description || undefined,
             isAvailable,

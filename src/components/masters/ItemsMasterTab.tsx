@@ -74,12 +74,20 @@ export const ItemsMasterTab: React.FC = () => {
   const [adjustAmount, setAdjustAmount] = useState('');
   const [adjustReason, setAdjustReason] = useState('');
 
+  const [sortBy, setSortBy] = useState<'EXCEL' | 'NAME_ASC' | 'CATEGORY' | 'PRICE_DESC' | 'STOCK_ASC'>('EXCEL');
+
+  // KPI count metrics
+  const rawCount = useMemo(() => masterItems.filter(i => i.type === 'RAW' || i.type === 'RAW_MATERIAL').length, [masterItems]);
+  const resaleCount = useMemo(() => masterItems.filter(i => i.type === 'RESALE').length, [masterItems]);
+  const recipeCount = useMemo(() => masterItems.filter(i => i.type === 'RECIPE').length, [masterItems]);
+  const expenseCount = useMemo(() => masterItems.filter(i => i.type === 'EXPENSE').length, [masterItems]);
+
   const lowStockItems = useMemo(() => {
     return masterItems.filter(i => (i.type === 'RAW' || i.type === 'RESALE' || i.type === 'RAW_MATERIAL') && i.reorderThreshold > 0 && i.currentStock <= i.reorderThreshold);
   }, [masterItems]);
 
   const filteredItems = useMemo(() => {
-    return masterItems.filter(item => {
+    const matched = masterItems.filter(item => {
       // Type / Low Stock Filter
       if (activeFilterTab === 'RAW' && item.type !== 'RAW' && item.type !== 'RAW_MATERIAL') return false;
       if (activeFilterTab === 'RESALE' && item.type !== 'RESALE') return false;
@@ -91,12 +99,12 @@ export const ItemsMasterTab: React.FC = () => {
         }
       }
 
-      // Category filter
+      // Category Filter
       if (selectedCategory !== 'ALL' && item.categoryId !== selectedCategory) {
         return false;
       }
 
-      // Search filter
+      // Search Filter
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
         return (
@@ -109,7 +117,26 @@ export const ItemsMasterTab: React.FC = () => {
 
       return true;
     });
-  }, [masterItems, activeFilterTab, selectedCategory, searchQuery]);
+
+    return matched.sort((a, b) => {
+      if (sortBy === 'EXCEL') {
+        return (a.sortOrder || 0) - (b.sortOrder || 0) || (parseInt(a.id) || 0) - (parseInt(b.id) || 0);
+      }
+      if (sortBy === 'NAME_ASC') {
+        return a.name.localeCompare(b.name);
+      }
+      if (sortBy === 'CATEGORY') {
+        return (a.categoryName || '').localeCompare(b.categoryName || '');
+      }
+      if (sortBy === 'PRICE_DESC') {
+        return b.sellingPriceUSD - a.sellingPriceUSD;
+      }
+      if (sortBy === 'STOCK_ASC') {
+        return a.currentStock - b.currentStock;
+      }
+      return 0;
+    });
+  }, [masterItems, activeFilterTab, selectedCategory, searchQuery, sortBy]);
 
   const handleDelete = (item: MasterItem) => {
     setActionError(null);
@@ -134,11 +161,6 @@ export const ItemsMasterTab: React.FC = () => {
     setAdjustAmount('');
     setAdjustReason('');
   };
-
-  const rawCount = masterItems.filter(i => i.type === 'RAW' || i.type === 'RAW_MATERIAL').length;
-  const resaleCount = masterItems.filter(i => i.type === 'RESALE').length;
-  const recipeCount = masterItems.filter(i => i.type === 'RECIPE').length;
-  const expenseCount = masterItems.filter(i => i.type === 'EXPENSE').length;
 
   return (
     <div className="space-y-6">
@@ -265,6 +287,20 @@ export const ItemsMasterTab: React.FC = () => {
               </option>
             ))}
           </select>
+
+          {/* Sort Order Selector */}
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as any)}
+            className="bg-surface-muted border border-border rounded-xl px-3 py-2 text-xs font-semibold text-text focus:outline-hidden focus:border-primary focus:bg-white cursor-pointer"
+            title="Sort item display order"
+          >
+            <option value="EXCEL">🔢 Custom Order (Excel No.)</option>
+            <option value="NAME_ASC">🔤 Name (A - Z)</option>
+            <option value="CATEGORY">📁 Master Category</option>
+            <option value="PRICE_DESC">💵 Price (High to Low)</option>
+            <option value="STOCK_ASC">📦 Stock Level</option>
+          </select>
         </div>
 
         {/* Filter Pills */}
@@ -390,6 +426,7 @@ export const ItemsMasterTab: React.FC = () => {
           <table className="w-full text-left text-xs">
             <thead>
               <tr className="border-b border-border bg-surface-muted/50 text-secondary uppercase text-[10px] tracking-wider font-bold">
+                <th className="py-3.5 px-3 text-center w-10">#</th>
                 <th className="py-3.5 px-4">Item & Code</th>
                 <th className="py-3.5 px-4">Category</th>
                 <th className="py-3.5 px-4">Type</th>
@@ -402,14 +439,14 @@ export const ItemsMasterTab: React.FC = () => {
             <tbody className="divide-y divide-border/60">
               {filteredItems.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center text-secondary">
+                  <td colSpan={8} className="py-12 text-center text-secondary">
                     <Package className="w-8 h-8 mx-auto text-secondary/40 mb-2" />
                     <p className="font-semibold text-text">No master items found</p>
                     <p className="text-xs mt-0.5">Try adjusting your filters or search keywords.</p>
                   </td>
                 </tr>
               ) : (
-                filteredItems.map((item) => {
+                filteredItems.map((item, idx) => {
                   const isRecipe = item.type === 'RECIPE';
                   const isExpense = item.type === 'EXPENSE';
                   const isLowStock = !isRecipe && !isExpense && item.reorderThreshold > 0 && item.currentStock <= item.reorderThreshold;
@@ -420,6 +457,10 @@ export const ItemsMasterTab: React.FC = () => {
                       <tr className={`hover:bg-surface-muted/30 transition group ${
                         isLowStock ? 'bg-rose-50/30' : ''
                       }`}>
+                        {/* Sequence No */}
+                        <td className="py-3.5 px-3 text-center font-mono text-[11px] font-semibold text-secondary/70">
+                          {item.sortOrder || (idx + 1)}
+                        </td>
                         {/* Item Name & Barcode */}
                         <td className="py-3.5 px-4 min-w-[180px]">
                           <div className="flex items-center gap-2.5">
@@ -571,7 +612,7 @@ export const ItemsMasterTab: React.FC = () => {
                       {/* Expandable Bill of Materials (BOM) Sub-Row for Recipe items */}
                       {isRecipe && isExpanded && item.bom && (
                         <tr className="bg-amber-50/50 border-b border-amber-200">
-                          <td colSpan={7} className="p-4 sm:px-8">
+                          <td colSpan={8} className="p-4 sm:px-8">
                             <div className="space-y-2">
                               <div className="flex items-center justify-between text-xs font-bold text-amber-900">
                                 <span className="flex items-center gap-1.5 uppercase tracking-wider text-[11px]">

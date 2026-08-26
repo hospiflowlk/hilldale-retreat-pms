@@ -130,7 +130,8 @@ export const ImportItemsModal: React.FC<ImportItemsModalProps> = ({ isOpen, onCl
             isAvailable: row.isAvailable,
             showInPos: row.showInPos,
             useInInvoices: row.useInInvoices,
-            useInExpenses: row.useInExpenses
+            useInExpenses: row.useInExpenses,
+            sortOrder: row.sortOrder
           });
           updated++;
         } else if (row.action === 'create') {
@@ -148,7 +149,8 @@ export const ImportItemsModal: React.FC<ImportItemsModalProps> = ({ isOpen, onCl
             isAvailable: row.isAvailable,
             showInPos: row.showInPos,
             useInInvoices: row.useInInvoices,
-            useInExpenses: row.useInExpenses
+            useInExpenses: row.useInExpenses,
+            sortOrder: row.sortOrder
           });
           inserted++;
         }

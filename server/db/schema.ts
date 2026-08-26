@@ -119,6 +119,7 @@ export const items = pgTable('items', {
   useInInvoices: boolean('use_in_invoices').default(true),
   useInExpenses: boolean('use_in_expenses').default(true),
   showInPos: boolean('show_in_pos').default(true),
+  sortOrder: integer('sort_order').default(0),
   barcode: varchar('barcode', { length: 100 }),
   description: text('description'),
 });

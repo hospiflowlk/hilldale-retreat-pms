@@ -1,12 +1,12 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { db } from '../../db';
 import { items, itemBom, categories, customers, suppliers, businessSources } from '../../db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, asc } from 'drizzle-orm';
 
 export const mastersRoutes: FastifyPluginAsync = async (fastify) => {
   // ---- ITEMS ----
   fastify.get('/items', async () => {
-    const rawItems = await db.select().from(items);
+    const rawItems = await db.select().from(items).orderBy(asc(items.sortOrder), asc(items.id));
     const rawCategories = await db.select().from(categories);
     const rawBoms = await db.select().from(itemBom);
     const catMap = new Map(rawCategories.map(c => [c.id, c.name]));
@@ -43,6 +43,7 @@ export const mastersRoutes: FastifyPluginAsync = async (fastify) => {
         useInInvoices: item.useInInvoices ?? (itemType === 'RESALE' || itemType === 'RECIPE'),
         useInExpenses: item.useInExpenses ?? (itemType === 'RAW' || itemType === 'RESALE' || itemType === 'EXPENSE'),
         showInPos: item.showInPos ?? (itemType === 'RESALE' || itemType === 'RECIPE'),
+        sortOrder: item.sortOrder || 0,
         barcode: item.barcode || '',
         description: item.description || '',
         bom: itemBomList,
@@ -94,6 +95,7 @@ export const mastersRoutes: FastifyPluginAsync = async (fastify) => {
       useInInvoices: data.useInInvoices !== undefined ? data.useInInvoices : (itemType === 'RESALE' || itemType === 'RECIPE'),
       useInExpenses: data.useInExpenses !== undefined ? data.useInExpenses : (itemType === 'RAW' || itemType === 'RESALE' || itemType === 'EXPENSE'),
       showInPos: data.showInPos !== undefined ? data.showInPos : (itemType === 'RESALE' || itemType === 'RECIPE'),
+      sortOrder: data.sortOrder ?? 0,
       barcode: data.barcode || null,
       description: data.description || null,
     };
@@ -130,6 +132,7 @@ export const mastersRoutes: FastifyPluginAsync = async (fastify) => {
       useInInvoices: raw.useInInvoices,
       useInExpenses: raw.useInExpenses,
       showInPos: raw.showInPos,
+      sortOrder: raw.sortOrder || 0,
       barcode: raw.barcode || '',
       description: raw.description || '',
       bom: data.bom || [],
@@ -160,6 +163,7 @@ export const mastersRoutes: FastifyPluginAsync = async (fastify) => {
     if (data.useInInvoices !== undefined) updatePayload.useInInvoices = data.useInInvoices;
     if (data.useInExpenses !== undefined) updatePayload.useInExpenses = data.useInExpenses;
     if (data.showInPos !== undefined) updatePayload.showInPos = data.showInPos;
+    if (data.sortOrder !== undefined) updatePayload.sortOrder = data.sortOrder;
     if (data.barcode !== undefined) updatePayload.barcode = data.barcode;
     if (data.description !== undefined) updatePayload.description = data.description;
 
@@ -196,6 +200,7 @@ export const mastersRoutes: FastifyPluginAsync = async (fastify) => {
       useInInvoices: raw.useInInvoices,
       useInExpenses: raw.useInExpenses,
       showInPos: raw.showInPos,
+      sortOrder: raw.sortOrder || 0,
       barcode: raw.barcode || '',
       description: raw.description || '',
       bom: data.bom || [],
