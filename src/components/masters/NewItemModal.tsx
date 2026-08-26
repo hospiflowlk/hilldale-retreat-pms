@@ -29,6 +29,7 @@ interface NewItemModalProps {
 
 const UNITS_OF_MEASURE: { value: UnitOfMeasure; label: string }[] = [
   { value: 'pcs', label: 'pcs' },
+  { value: 'l', label: 'l' },
   { value: 'ml', label: 'ml' },
   { value: 'g', label: 'g' },
   { value: 'kg', label: 'kg' },
@@ -89,6 +90,8 @@ export const NewItemModal: React.FC<NewItemModalProps> = ({
       let unitCost = raw.costPriceUSD;
       if (raw.unit === 'kg' && ing.unit === 'g') unitCost = raw.costPriceUSD / 1000;
       if (raw.unit === 'g' && ing.unit === 'kg') unitCost = raw.costPriceUSD * 1000;
+      if (raw.unit === 'l' && ing.unit === 'ml') unitCost = raw.costPriceUSD / 1000;
+      if (raw.unit === 'ml' && ing.unit === 'l') unitCost = raw.costPriceUSD * 1000;
 
       return sum + (unitCost * ing.quantity);
     }, 0);

@@ -179,7 +179,7 @@ export const downloadSampleItemTemplateExcel = () => {
     },
     {
       'Field Name': 'Unit of Measure',
-      'Allowed Options / Format': 'pcs | ml | g | kg | bottle | shot | unit',
+      'Allowed Options / Format': 'pcs | l | ml | g | kg | bottle | shot | unit',
       'Description & Rules': 'Defaults to "pcs" if unrecognized.'
     },
     {
@@ -309,7 +309,7 @@ export const parseItemsFromExcel = async (
           const categoryName = String(row['Master Category'] || row['Category'] || row['Category Name'] || row['category'] || 'General').trim();
           
           let unit = String(row['Unit of Measure'] || row['Unit'] || row['unit'] || 'pcs').trim().toLowerCase();
-          const validUnits: UnitOfMeasure[] = ['pcs', 'ml', 'g', 'kg', 'bottle', 'shot', 'unit'];
+          const validUnits: UnitOfMeasure[] = ['pcs', 'l', 'ml', 'g', 'kg', 'bottle', 'shot', 'unit'];
           if (!validUnits.includes(unit as UnitOfMeasure)) {
             unit = 'pcs';
           }

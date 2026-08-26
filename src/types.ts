@@ -561,7 +561,7 @@ export interface MasterCategory {
 
 // 2. Items Master & Bill of Materials (BOM)
 export type ItemType = 'RAW' | 'RESALE' | 'RECIPE' | 'EXPENSE' | 'RAW_MATERIAL';
-export type UnitOfMeasure = 'pcs' | 'ml' | 'g' | 'kg' | 'bottle' | 'shot' | 'unit';
+export type UnitOfMeasure = 'pcs' | 'l' | 'ml' | 'g' | 'kg' | 'bottle' | 'shot' | 'unit';
 
 export interface BOMIngredient {
   ingredientItemId: string;
