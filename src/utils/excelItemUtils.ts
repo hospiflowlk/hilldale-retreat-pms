@@ -56,7 +56,10 @@ export const exportMasterItemsToExcel = (items: MasterItem[], customFileName?: s
     'Use in Expenses': item.useInExpenses !== false ? 'Yes' : 'No',
     'Barcode / SKU (Optional)': item.barcode || '',
     'Status': item.isAvailable !== false ? 'Active' : 'Inactive',
-    'Description & Guest Menu Notes': item.description || ''
+    'Description & Guest Menu Notes': item.description || '',
+    'BOM Formula / Ingredients': item.bom && item.bom.length > 0 
+      ? item.bom.map(b => `${b.ingredientName}: ${b.quantity} ${b.unit}`).join(' | ') 
+      : ''
   }));
 
   const worksheet = XLSX.utils.json_to_sheet(data);
@@ -367,5 +370,47 @@ export const parseItemsFromExcel = async (
 
     reader.onerror = () => reject(new Error('Failed to read the file.'));
     reader.readAsArrayBuffer(file);
+  });
+};
+
+/**
+ * Export full Master Items array to a loss-less JSON backup file
+ */
+export const exportMasterItemsToJSON = (items: MasterItem[], customFileName?: string) => {
+  const dateStr = new Date().toISOString().split('T')[0];
+  const fileName = customFileName || `Hilldale_Master_Items_Full_Backup_${dateStr}.json`;
+  const jsonStr = JSON.stringify(items, null, 2);
+  
+  const blob = new Blob([jsonStr], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+};
+
+/**
+ * Import Master Items array from a JSON file backup
+ */
+export const parseItemsFromJSON = (file: File): Promise<MasterItem[]> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const text = e.target?.result as string;
+        const parsed = JSON.parse(text);
+        if (!Array.isArray(parsed)) {
+          throw new Error('JSON file must contain an array of items.');
+        }
+        resolve(parsed as MasterItem[]);
+      } catch (err: any) {
+        reject(new Error('Invalid JSON format: ' + err.message));
+      }
+    };
+    reader.onerror = () => reject(new Error('Failed to read JSON file.'));
+    reader.readAsText(file);
   });
 };

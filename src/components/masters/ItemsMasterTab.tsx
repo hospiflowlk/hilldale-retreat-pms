@@ -20,14 +20,16 @@ import {
   Download,
   Upload,
   FileSpreadsheet,
-  MoreVertical
+  MoreVertical,
+  FileCode,
+  FileJson
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { MasterItem, ItemType } from '../../types';
 import { NewItemModal } from './NewItemModal';
 import { ImportItemsModal } from './ImportItemsModal';
 import { BOMBuilderModal } from './BOMBuilderModal';
-import { exportMasterItemsToExcel } from '../../utils/excelItemUtils';
+import { exportMasterItemsToExcel, exportMasterItemsToJSON, parseItemsFromJSON } from '../../utils/excelItemUtils';
 import { useItems, useCategories } from '../../hooks/useMasters';
 
 export const ItemsMasterTab: React.FC = () => {
@@ -37,13 +39,58 @@ export const ItemsMasterTab: React.FC = () => {
   const { data: masterItems = [], isLoading } = useItems.useGetAll();
   const { data: masterCategories = [] } = useCategories.useGetAll();
   const deleteItemMut = useItems.useDelete();
+  const deleteAllItemsMut = useItems.useDeleteAll();
+  const createItemMut = useItems.useCreate();
   const updateItemMut = useItems.useUpdate();
+  const jsonInputRef = useRef<HTMLInputElement>(null);
 
   const handleDeleteAll = () => {
+    setActionError(null);
     if (masterItems.length === 0) return;
-    if (window.confirm("Are you sure you want to delete ALL items? This action cannot be undone.")) {
-      Promise.all(masterItems.map(item => deleteItemMut.mutateAsync(item.id)))
-        .catch((err: any) => setActionError(err.message || 'Failed to delete all items.'));
+    if (window.confirm(`⚠️ DANGER ZONE: Are you sure you want to delete ALL ${masterItems.length} items from the master catalog? This action cannot be undone.`)) {
+      const confirmText = window.prompt(`Type "DELETE ALL" to confirm wiping all ${masterItems.length} items:`);
+      if (confirmText === 'DELETE ALL') {
+        deleteAllItemsMut.mutate(undefined, {
+          onError: (err: any) => setActionError(err.message || 'Failed to delete all items.')
+        });
+      }
+    }
+  };
+
+  const handleJSONFileSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const jsonItems = await parseItemsFromJSON(file);
+      if (window.confirm(`Found ${jsonItems.length} items in JSON backup. Do you want to import them into your master catalog?`)) {
+        let count = 0;
+        for (const item of jsonItems) {
+          await createItemMut.mutateAsync({
+            name: item.name,
+            type: item.type,
+            categoryName: item.categoryName,
+            unit: item.unit,
+            costPriceUSD: item.costPriceUSD,
+            sellingPriceUSD: item.sellingPriceUSD,
+            currentStock: item.currentStock,
+            reorderThreshold: item.reorderThreshold,
+            useInInvoices: item.useInInvoices,
+            useInExpenses: item.useInExpenses,
+            showInPos: item.showInPos,
+            sortOrder: item.sortOrder,
+            bom: item.bom,
+            description: item.description,
+            barcode: item.barcode,
+            isAvailable: item.isAvailable !== false
+          });
+          count++;
+        }
+        alert(`Successfully imported ${count} items from JSON backup!`);
+      }
+    } catch (err: any) {
+      setActionError(err.message || 'Failed to parse JSON backup file.');
+    } finally {
+      if (jsonInputRef.current) jsonInputRef.current.value = '';
     }
   };
 
@@ -329,25 +376,82 @@ export const ItemsMasterTab: React.FC = () => {
             </div>
           </div>
 
-          {/* Right: Actions (Export, Import, New Item) */}
-          <div className="flex items-center gap-2 shrink-0 self-end lg:self-auto w-full sm:w-auto justify-end">
-            <button
-              onClick={() => exportMasterItemsToExcel(filteredItems)}
-              className="px-3 py-2 rounded-xl text-xs font-semibold bg-white text-secondary hover:text-text border border-border hover:bg-surface-muted transition cursor-pointer flex items-center gap-1.5 shadow-2xs"
-              title="Export filtered items to Excel"
-            >
-              <Download className="w-3.5 h-3.5 text-emerald-700" />
-              <span>Export</span>
-            </button>
+          {/* Hidden JSON File Input */}
+          <input
+            type="file"
+            ref={jsonInputRef}
+            onChange={handleJSONFileSelected}
+            accept=".json"
+            className="hidden"
+          />
 
-            <button
-              onClick={() => setIsImportModalOpen(true)}
-              className="px-3 py-2 rounded-xl text-xs font-semibold bg-white text-secondary hover:text-text border border-border hover:bg-surface-muted transition cursor-pointer flex items-center gap-1.5 shadow-2xs"
-              title="Import items from Excel"
-            >
-              <Upload className="w-3.5 h-3.5 text-sky-700" />
-              <span>Import</span>
-            </button>
+          {/* Right: Actions Menu (Export, Import, JSON Backup, Delete All) & New Item */}
+          <div className="flex items-center gap-2 shrink-0 self-end lg:self-auto w-full sm:w-auto justify-end">
+            <div className="relative" ref={actionsRef}>
+              <button
+                type="button"
+                onClick={() => setIsActionsOpen(!isActionsOpen)}
+                className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-white hover:bg-surface-muted text-text border border-border transition cursor-pointer shadow-2xs flex items-center gap-2"
+                title="Catalog Import, Export & Reset Options"
+              >
+                <SlidersHorizontal className="w-3.5 h-3.5 text-primary" />
+                <span>Catalog Actions</span>
+                <ChevronDown className="w-3.5 h-3.5 text-secondary" />
+              </button>
+
+              {isActionsOpen && (
+                <div className="absolute right-0 top-full mt-2 z-50 w-56 bg-white border border-border rounded-2xl shadow-xl overflow-hidden py-1.5 space-y-0.5">
+                  <div className="px-3.5 py-1 text-[10px] font-extrabold uppercase tracking-wider text-secondary/70">
+                    Excel Spreadsheets
+                  </div>
+                  <button
+                    onClick={() => { exportMasterItemsToExcel(filteredItems); setIsActionsOpen(false); }}
+                    className="w-full px-3.5 py-2 text-xs font-medium text-text hover:bg-surface-muted transition flex items-center gap-2 text-left cursor-pointer"
+                  >
+                    <Download className="w-4 h-4 text-emerald-700" />
+                    <span>Export Excel (.xlsx)</span>
+                  </button>
+                  <button
+                    onClick={() => { setIsImportModalOpen(true); setIsActionsOpen(false); }}
+                    className="w-full px-3.5 py-2 text-xs font-medium text-text hover:bg-surface-muted transition flex items-center gap-2 text-left cursor-pointer"
+                  >
+                    <Upload className="w-4 h-4 text-sky-700" />
+                    <span>Import Excel (.xlsx)</span>
+                  </button>
+
+                  <div className="h-px bg-border/60 my-1" />
+
+                  <div className="px-3.5 py-1 text-[10px] font-extrabold uppercase tracking-wider text-secondary/70">
+                    Full JSON Backup (Lossless)
+                  </div>
+                  <button
+                    onClick={() => { exportMasterItemsToJSON(masterItems); setIsActionsOpen(false); }}
+                    className="w-full px-3.5 py-2 text-xs font-medium text-text hover:bg-surface-muted transition flex items-center gap-2 text-left cursor-pointer"
+                  >
+                    <FileCode className="w-4 h-4 text-indigo-600" />
+                    <span>Export Full Backup (.json)</span>
+                  </button>
+                  <button
+                    onClick={() => { jsonInputRef.current?.click(); setIsActionsOpen(false); }}
+                    className="w-full px-3.5 py-2 text-xs font-medium text-text hover:bg-surface-muted transition flex items-center gap-2 text-left cursor-pointer"
+                  >
+                    <FileJson className="w-4 h-4 text-purple-600" />
+                    <span>Import Full Backup (.json)</span>
+                  </button>
+
+                  <div className="h-px bg-border/60 my-1" />
+
+                  <button
+                    onClick={() => { handleDeleteAll(); setIsActionsOpen(false); }}
+                    disabled={masterItems.length === 0}
+                    className="w-full px-3.5 py-2 text-xs font-bold text-rose-700 hover:bg-rose-50 transition flex items-center gap-2 text-left cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    <Trash2 className="w-4 h-4 text-rose-600" />
+                    <span>Delete All Items</span>
+                  </button>
+                </div>
+              )}
+            </div>
 
             <button
               onClick={() => { setItemToEdit(null); setIsModalOpen(true); }}

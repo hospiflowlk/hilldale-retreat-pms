@@ -37,6 +37,14 @@ function createMasterHooks<T>(endpoint: string, queryKey: string) {
         onSuccess: () => queryClient.invalidateQueries({ queryKey: [queryKey] }),
       });
     },
+
+    useDeleteAll: () => {
+      const queryClient = useQueryClient();
+      return useMutation({
+        mutationFn: async () => (await apiClient.delete(endpoint)).data,
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: [queryKey] }),
+      });
+    },
   };
 }
 
