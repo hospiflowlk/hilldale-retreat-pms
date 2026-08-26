@@ -433,7 +433,7 @@ export const NewItemModal: React.FC<NewItemModalProps> = ({
                     <span className="absolute left-3 top-2.5 text-secondary text-xs">$</span>
                     <input
                       type="number"
-                      step="0.001"
+                      step="any"
                       min="0"
                       value={costPriceUSD}
                       onChange={(e) => setCostPriceUSD(e.target.value)}
@@ -568,8 +568,8 @@ export const NewItemModal: React.FC<NewItemModalProps> = ({
                       {/* Quantity */}
                       <input
                         type="number"
-                        step="0.001"
-                        min="0.001"
+                        step="any"
+                        min="0"
                         value={ing.quantity}
                         onChange={(e) => handleUpdateBOMIngredient(idx, { quantity: parseFloat(e.target.value) || 0 })}
                         placeholder="Qty"

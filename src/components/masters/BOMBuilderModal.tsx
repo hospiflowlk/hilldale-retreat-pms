@@ -220,8 +220,8 @@ export const BOMBuilderModal: React.FC<BOMBuilderModalProps> = ({
                         </label>
                         <input
                           type="number"
-                          step="0.001"
-                          min="0.001"
+                          step="any"
+                          min="0"
                           value={ing.quantity}
                           onChange={e => handleIngredientChange(idx, 'quantity', parseFloat(e.target.value) || 0)}
                           className="w-full px-3 py-1.5 rounded-xl border border-border text-xs text-text font-medium focus:ring-1 focus:ring-primary focus:outline-none"
