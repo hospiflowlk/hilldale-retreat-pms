@@ -223,7 +223,7 @@ export const NewItemModal: React.FC<NewItemModalProps> = ({
       categoryName: masterCategories.find(c => c.id === categoryId)?.name || 'General',
       unit,
       costPriceUSD: costNum,
-      sellingPriceUSD: isExpense ? 0 : sellNum,
+      sellingPriceUSD: (type === 'RAW' || type === 'RAW_MATERIAL') ? 0 : sellNum,
       currentStock: isExpense ? 0 : stockNum,
       reorderThreshold: isExpense ? 0 : reorderNum,
       isAvailable,
@@ -432,28 +432,6 @@ export const NewItemModal: React.FC<NewItemModalProps> = ({
           </div>
 
           {/* Pricing Section (Dynamically adapted for EXPENSE vs RESALE vs RECIPE) */}
-          {type === 'EXPENSE' ? (
-            <div className="p-4 rounded-xl bg-surface-muted/40 border border-border space-y-2">
-              <label className="block text-xs font-bold text-text uppercase tracking-wider">
-                Standard / Estimated Cost (USD)
-              </label>
-              <div className="relative max-w-xs">
-                <span className="absolute left-3 top-2.5 text-secondary text-xs">$</span>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={costPriceUSD}
-                  onChange={(e) => setCostPriceUSD(e.target.value)}
-                  placeholder="0.00"
-                  className="w-full bg-white border border-border rounded-xl pl-7 pr-3 py-2 text-xs text-text font-mono focus:outline-hidden focus:border-primary"
-                />
-              </div>
-              <p className="text-[11px] text-secondary">
-                Typical or baseline cost per billing cycle, run, or purchase unit. (No selling price or stock levels tracked for overhead expenses).
-              </p>
-            </div>
-          ) : (
             <div className="p-4 rounded-xl bg-surface-muted/40 border border-border space-y-3">
               <div className="text-xs font-bold text-text uppercase tracking-wider flex items-center justify-between">
                 <span>Financial Pricing & Margin</span>
@@ -518,7 +496,6 @@ export const NewItemModal: React.FC<NewItemModalProps> = ({
                 </div>
               </div>
             </div>
-          )}
 
           {/* Stock & Reorder Threshold Alert (Only for RESALE & RECIPE, hidden for EXPENSE) */}
           {type !== 'EXPENSE' && (
