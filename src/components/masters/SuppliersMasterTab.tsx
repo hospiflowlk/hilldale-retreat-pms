@@ -17,8 +17,12 @@ import {
   AlertTriangle,
   Download,
   Upload,
-  MoreVertical
+  MoreVertical,
+  FileCode,
+  FileJson
 } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
+import { apiClient } from '../../utils/apiClient';
 import { useApp } from '../../context/AppContext';
 import { MasterSupplier } from '../../types';
 import { NewSupplierModal } from './NewSupplierModal';
@@ -26,7 +30,7 @@ import { SupplierStatementModal } from './SupplierStatementModal';
 import { RecordSupplierPurchaseModal } from './RecordSupplierPurchaseModal';
 import { RecordSupplierPaymentModal } from './RecordSupplierPaymentModal';
 import { ImportSuppliersModal } from './ImportSuppliersModal';
-import { exportMasterSuppliersToExcel } from '../../utils/excelSupplierUtils';
+import { exportMasterSuppliersToExcel, exportMasterSuppliersToJSON, parseSuppliersFromJSON } from '../../utils/excelSupplierUtils';
 import { useSuppliers } from '../../hooks/useMasters';
 
 export const SuppliersMasterTab: React.FC = () => {
@@ -50,10 +54,33 @@ export const SuppliersMasterTab: React.FC = () => {
   const [isActionsMenuOpen, setIsActionsMenuOpen] = useState(false);
   const actionsMenuRef = useRef<HTMLDivElement>(null);
   
+  const queryClient = useQueryClient();
+  const jsonInputRef = useRef<HTMLInputElement>(null);
+
   const handleDeleteAll = () => {
     if (masterSuppliers.length === 0) return;
-    if (window.confirm("Are you sure you want to delete ALL suppliers? This action cannot be undone.")) {
-      masterSuppliers.forEach(s => deleteSupplierMut.mutate(s.id));
+    if (window.confirm(`⚠️ Are you sure you want to delete ALL ${masterSuppliers.length} suppliers? This action cannot be undone.`)) {
+      const confirmText = window.prompt(`Type "DELETE ALL" to confirm wiping all ${masterSuppliers.length} suppliers:`);
+      if (confirmText === 'DELETE ALL') {
+        masterSuppliers.forEach(s => deleteSupplierMut.mutate(s.id));
+      }
+    }
+  };
+
+  const handleJSONFileSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const jsonSuppliers = await parseSuppliersFromJSON(file);
+      if (window.confirm(`Found ${jsonSuppliers.length} suppliers in JSON backup. Do you want to import them into your master catalog?`)) {
+        const response = await apiClient.post('masters/suppliers/bulk', { suppliers: jsonSuppliers });
+        queryClient.invalidateQueries({ queryKey: ['suppliers'] });
+        alert(`Successfully imported ${response.data.count || jsonSuppliers.length} suppliers from JSON backup!`);
+      }
+    } catch (err: any) {
+      alert(err.response?.data?.error || err.message || 'Failed to parse JSON backup file.');
+    } finally {
+      if (jsonInputRef.current) jsonInputRef.current.value = '';
     }
   };
 
@@ -183,42 +210,87 @@ export const SuppliersMasterTab: React.FC = () => {
             <span>New Supplier</span>
           </button>
 
+          {/* Hidden JSON File Input */}
+          <input
+            type="file"
+            ref={jsonInputRef}
+            onChange={handleJSONFileSelected}
+            accept=".json"
+            className="hidden"
+          />
+
           <div className="relative" ref={actionsMenuRef}>
             <button
               onClick={() => setIsActionsMenuOpen(!isActionsMenuOpen)}
               className="p-2 rounded-xl border border-border bg-white text-secondary hover:text-text hover:bg-surface-muted transition shadow-xs cursor-pointer"
+              title="Supplier Catalog Actions"
             >
               <MoreVertical className="w-4 h-4" />
             </button>
 
             {isActionsMenuOpen && (
-              <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-border rounded-xl shadow-lg overflow-hidden z-20 animate-in fade-in slide-in-from-top-2 text-xs">
+              <div className="absolute right-0 top-full mt-1 w-56 bg-white border border-border rounded-xl shadow-lg overflow-hidden z-20 animate-in fade-in slide-in-from-top-2 text-xs py-1">
+                <div className="px-3 py-1 text-[10px] font-extrabold uppercase tracking-wider text-secondary/70">
+                  Excel Options
+                </div>
                 <button 
                   onClick={() => {
                     exportMasterSuppliersToExcel(masterSuppliers);
                     setIsActionsMenuOpen(false);
                   }}
-                  className="w-full text-left px-4 py-2.5 text-text hover:bg-surface-muted transition flex items-center gap-2 cursor-pointer"
+                  className="w-full text-left px-3.5 py-2 text-text hover:bg-surface-muted transition flex items-center gap-2 cursor-pointer"
                 >
                   <Download className="w-4 h-4 text-emerald-600" />
-                  Export Excel
+                  Export Excel (.xlsx)
                 </button>
                 <button 
                   onClick={() => {
                     setIsImportModalOpen(true);
                     setIsActionsMenuOpen(false);
                   }}
-                  className="w-full text-left px-4 py-2.5 text-text hover:bg-surface-muted transition flex items-center gap-2 cursor-pointer border-b border-border"
+                  className="w-full text-left px-3.5 py-2 text-text hover:bg-surface-muted transition flex items-center gap-2 cursor-pointer"
                 >
                   <Upload className="w-4 h-4 text-sky-600" />
-                  Import Excel
+                  Import Excel (.xlsx)
+                </button>
+
+                <div className="h-px bg-border/60 my-1" />
+
+                <div className="px-3 py-1 text-[10px] font-extrabold uppercase tracking-wider text-secondary/70">
+                  Full JSON Backup
+                </div>
+                <button 
+                  onClick={() => {
+                    exportMasterSuppliersToJSON(masterSuppliers);
+                    setIsActionsMenuOpen(false);
+                  }}
+                  className="w-full text-left px-3.5 py-2 text-text hover:bg-surface-muted transition flex items-center gap-2 cursor-pointer"
+                >
+                  <FileCode className="w-4 h-4 text-indigo-600" />
+                  Export Full Backup (.json)
                 </button>
                 <button 
-                  onClick={handleDeleteAll}
-                  className="w-full text-left px-4 py-2.5 text-rose-600 font-bold hover:bg-rose-50 transition flex items-center gap-2 cursor-pointer"
+                  onClick={() => {
+                    jsonInputRef.current?.click();
+                    setIsActionsMenuOpen(false);
+                  }}
+                  className="w-full text-left px-3.5 py-2 text-text hover:bg-surface-muted transition flex items-center gap-2 cursor-pointer"
+                >
+                  <FileJson className="w-4 h-4 text-purple-600" />
+                  Import Full Backup (.json)
+                </button>
+
+                <div className="h-px bg-border/60 my-1" />
+
+                <button 
+                  onClick={() => {
+                    handleDeleteAll();
+                    setIsActionsMenuOpen(false);
+                  }}
+                  className="w-full text-left px-3.5 py-2 text-rose-600 font-bold hover:bg-rose-50 transition flex items-center gap-2 cursor-pointer"
                 >
                   <Trash2 className="w-4 h-4" />
-                  Delete All
+                  Delete All Suppliers
                 </button>
               </div>
             )}

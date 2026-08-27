@@ -100,6 +100,20 @@ export const ImportSuppliersModal: React.FC<ImportSuppliersModalProps> = ({ isOp
     setIsImporting(true);
 
     try {
+      const payload = validRows.map(row => ({
+        companyName: row.companyName,
+        contactPerson: row.contactPerson || '',
+        email: row.email || '',
+        phone: row.phone || '',
+        address: row.address || '',
+        taxNumber: row.taxNumber || '',
+        openingBalanceUSD: row.openingBalanceUSD || 0,
+        currentBalanceOwedUSD: row.openingBalanceUSD || 0,
+        bankDetails: row.bankDetails || '',
+        notes: row.notes || '',
+        isActive: row.isActive
+      }));
+
       for (const row of validRows) {
         if (row.action === 'update' && row.matchedExistingId) {
           await updateSupplierMut.mutateAsync({
@@ -109,6 +123,10 @@ export const ImportSuppliersModal: React.FC<ImportSuppliersModalProps> = ({ isOp
             email: row.email || '',
             phone: row.phone || '',
             address: row.address || '',
+            taxNumber: row.taxNumber || undefined,
+            openingBalanceUSD: row.openingBalanceUSD || 0,
+            bankDetails: row.bankDetails || undefined,
+            notes: row.notes || undefined,
             isActive: row.isActive
           });
         } else {
@@ -118,6 +136,10 @@ export const ImportSuppliersModal: React.FC<ImportSuppliersModalProps> = ({ isOp
             email: row.email || '',
             phone: row.phone || '',
             address: row.address || '',
+            taxNumber: row.taxNumber || undefined,
+            openingBalanceUSD: row.openingBalanceUSD || 0,
+            bankDetails: row.bankDetails || undefined,
+            notes: row.notes || undefined,
             isActive: row.isActive
           });
         }
@@ -125,7 +147,6 @@ export const ImportSuppliersModal: React.FC<ImportSuppliersModalProps> = ({ isOp
 
       setImportSuccess(true);
       
-      // Auto close after success
       setTimeout(() => {
         handleReset();
         onClose();

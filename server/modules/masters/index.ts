@@ -448,78 +448,161 @@ export const mastersRoutes: FastifyPluginAsync = async (fastify) => {
   // ---- SUPPLIERS ----
   fastify.get('/suppliers', async () => {
     const raw = await db.select().from(suppliers);
-    return raw.map(s => ({
-      id: s.id.toString(),
-      name: s.name,
-      companyName: s.name,
-      contactPerson: s.contactInfo || '',
-      phone: '',
-      email: '',
-      address: '',
-      categories: ['Groceries & Provisions'],
-      leadTimeDays: 1,
-      openingBalanceUSD: 0,
-      currentBalanceOwedUSD: 0,
-      currentBalanceUSD: 0,
-      isActive: true,
-      createdAt: s.createdAt ? s.createdAt.toISOString() : new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    }));
+    return raw.map(s => {
+      let meta: any = {};
+      if (s.contactInfo) {
+        try {
+          meta = JSON.parse(s.contactInfo);
+        } catch {
+          meta = { contactPerson: s.contactInfo };
+        }
+      }
+      return {
+        id: s.id.toString(),
+        name: s.name,
+        companyName: s.name,
+        contactPerson: meta.contactPerson || '',
+        phone: meta.phone || '',
+        email: meta.email || '',
+        address: meta.address || '',
+        taxNumber: meta.taxNumber || '',
+        openingBalanceUSD: meta.openingBalanceUSD || 0,
+        currentBalanceOwedUSD: meta.currentBalanceOwedUSD || meta.openingBalanceUSD || 0,
+        bankDetails: meta.bankDetails || '',
+        notes: meta.notes || '',
+        categories: meta.categories || ['Groceries & Provisions'],
+        leadTimeDays: meta.leadTimeDays || 1,
+        isActive: meta.isActive !== false,
+        createdAt: s.createdAt ? s.createdAt.toISOString() : new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+    });
   });
 
-  fastify.post('/suppliers', async (request) => {
-    const data = request.body as any;
-    const insertPayload: any = {
-      name: data.companyName || data.name,
-      contactInfo: data.contactPerson || data.phone || data.email || null,
-    };
-    const result = await db.insert(suppliers).values(insertPayload).returning();
-    const s = result[0];
-    return {
-      id: s.id.toString(),
-      name: s.name,
-      companyName: s.name,
-      contactPerson: data.contactPerson || '',
-      phone: data.phone || '',
-      email: data.email || '',
-      address: data.address || '',
-      categories: data.categories || [],
-      leadTimeDays: data.leadTimeDays || 1,
-      openingBalanceUSD: data.openingBalanceUSD || 0,
-      currentBalanceOwedUSD: 0,
-      currentBalanceUSD: 0,
-      isActive: true,
-    };
+  fastify.post('/suppliers', async (request, reply) => {
+    try {
+      const data = request.body as any;
+      const metaPayload = {
+        contactPerson: data.contactPerson || '',
+        phone: data.phone || '',
+        email: data.email || '',
+        address: data.address || '',
+        taxNumber: data.taxNumber || '',
+        openingBalanceUSD: data.openingBalanceUSD || 0,
+        currentBalanceOwedUSD: data.currentBalanceOwedUSD || data.openingBalanceUSD || 0,
+        bankDetails: data.bankDetails || '',
+        notes: data.notes || '',
+        categories: data.categories || [],
+        leadTimeDays: data.leadTimeDays || 1,
+        isActive: data.isActive !== false,
+      };
+
+      const insertPayload: any = {
+        name: data.companyName || data.name,
+        contactInfo: JSON.stringify(metaPayload),
+      };
+      const result = await db.insert(suppliers).values(insertPayload).returning();
+      const s = result[0];
+      return {
+        id: s.id.toString(),
+        name: s.name,
+        companyName: s.name,
+        ...metaPayload,
+        createdAt: s.createdAt ? s.createdAt.toISOString() : new Date().toISOString(),
+      };
+    } catch (err: any) {
+      reply.status(400).send({ error: err.message || 'Failed to create supplier.' });
+    }
   });
 
-  fastify.put('/suppliers/:id', async (request) => {
+  fastify.post('/suppliers/bulk', async (request, reply) => {
+    const { suppliers: supplierList } = request.body as { suppliers: any[] };
+    if (!Array.isArray(supplierList) || supplierList.length === 0) {
+      return { success: true, count: 0 };
+    }
+
+    try {
+      let count = 0;
+      for (const data of supplierList) {
+        const metaPayload = {
+          contactPerson: data.contactPerson || '',
+          phone: data.phone || '',
+          email: data.email || '',
+          address: data.address || '',
+          taxNumber: data.taxNumber || '',
+          openingBalanceUSD: data.openingBalanceUSD || 0,
+          currentBalanceOwedUSD: data.currentBalanceOwedUSD || data.openingBalanceUSD || 0,
+          bankDetails: data.bankDetails || '',
+          notes: data.notes || '',
+          categories: data.categories || [],
+          leadTimeDays: data.leadTimeDays || 1,
+          isActive: data.isActive !== false,
+        };
+
+        const insertPayload: any = {
+          name: data.companyName || data.name,
+          contactInfo: JSON.stringify(metaPayload),
+        };
+        await db.insert(suppliers).values(insertPayload);
+        count++;
+      }
+      return { success: true, count };
+    } catch (err: any) {
+      reply.status(400).send({ error: err.message || 'Bulk supplier import failed.' });
+    }
+  });
+
+  fastify.put('/suppliers/:id', async (request, reply) => {
     const { id } = request.params as { id: string };
+    const numId = parseInt(id);
     const data = request.body as any;
-    const updatePayload: any = {};
-    if (data.companyName !== undefined || data.name !== undefined) {
-      updatePayload.name = data.companyName || data.name;
-    }
-    if (data.contactPerson !== undefined || data.phone !== undefined || data.email !== undefined) {
-      updatePayload.contactInfo = data.contactPerson || data.phone || data.email;
-    }
 
-    const result = await db.update(suppliers).set(updatePayload).where(eq(suppliers.id, parseInt(id))).returning();
-    const s = result[0];
-    return {
-      id: s.id.toString(),
-      name: s.name,
-      companyName: s.name,
-      contactPerson: data.contactPerson || '',
-      phone: data.phone || '',
-      email: data.email || '',
-      address: data.address || '',
-      categories: data.categories || [],
-      leadTimeDays: data.leadTimeDays || 1,
-      openingBalanceUSD: data.openingBalanceUSD || 0,
-      currentBalanceOwedUSD: 0,
-      currentBalanceUSD: 0,
-      isActive: true,
-    };
+    try {
+      const existing = await db.select().from(suppliers).where(eq(suppliers.id, numId));
+      let currentMeta: any = {};
+      if (existing.length > 0 && existing[0].contactInfo) {
+        try {
+          currentMeta = JSON.parse(existing[0].contactInfo);
+        } catch {
+          currentMeta = { contactPerson: existing[0].contactInfo };
+        }
+      }
+
+      const updatedMeta = {
+        ...currentMeta,
+        contactPerson: data.contactPerson !== undefined ? data.contactPerson : currentMeta.contactPerson,
+        phone: data.phone !== undefined ? data.phone : currentMeta.phone,
+        email: data.email !== undefined ? data.email : currentMeta.email,
+        address: data.address !== undefined ? data.address : currentMeta.address,
+        taxNumber: data.taxNumber !== undefined ? data.taxNumber : currentMeta.taxNumber,
+        openingBalanceUSD: data.openingBalanceUSD !== undefined ? data.openingBalanceUSD : currentMeta.openingBalanceUSD,
+        currentBalanceOwedUSD: data.currentBalanceOwedUSD !== undefined ? data.currentBalanceOwedUSD : currentMeta.currentBalanceOwedUSD,
+        bankDetails: data.bankDetails !== undefined ? data.bankDetails : currentMeta.bankDetails,
+        notes: data.notes !== undefined ? data.notes : currentMeta.notes,
+        categories: data.categories !== undefined ? data.categories : currentMeta.categories,
+        leadTimeDays: data.leadTimeDays !== undefined ? data.leadTimeDays : currentMeta.leadTimeDays,
+        isActive: data.isActive !== undefined ? data.isActive : currentMeta.isActive,
+      };
+
+      const updatePayload: any = {
+        contactInfo: JSON.stringify(updatedMeta),
+      };
+      if (data.companyName !== undefined || data.name !== undefined) {
+        updatePayload.name = data.companyName || data.name;
+      }
+
+      const result = await db.update(suppliers).set(updatePayload).where(eq(suppliers.id, numId)).returning();
+      const s = result[0];
+      return {
+        id: s.id.toString(),
+        name: s.name,
+        companyName: s.name,
+        ...updatedMeta,
+        createdAt: s.createdAt ? s.createdAt.toISOString() : new Date().toISOString(),
+      };
+    } catch (err: any) {
+      reply.status(400).send({ error: err.message || 'Failed to update supplier.' });
+    }
   });
 
   fastify.delete('/suppliers/:id', async (request, reply) => {

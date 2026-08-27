@@ -12,6 +12,7 @@ export interface ParsedSupplierRow {
   taxNumber: string;
   openingBalanceUSD: number;
   bankDetails?: string;
+  notes?: string;
   isActive: boolean;
   action: 'create' | 'update';
   matchedExistingId?: string;
@@ -146,6 +147,7 @@ export const parseSuppliersFromExcel = async (
           const address = row['Address']?.toString().trim() || '';
           const taxNumber = row['Tax Number']?.toString().trim() || '';
           const bankDetails = row['Bank Details']?.toString().trim() || '';
+          const notes = row['Notes']?.toString().trim() || '';
           let openingBalanceUSD = parseFloat(row['Opening Balance (USD)']);
           if (isNaN(openingBalanceUSD)) openingBalanceUSD = 0;
           
@@ -189,6 +191,7 @@ export const parseSuppliersFromExcel = async (
             taxNumber,
             openingBalanceUSD,
             bankDetails,
+            notes,
             isActive,
             action,
             matchedExistingId: matchedId,
@@ -207,5 +210,47 @@ export const parseSuppliersFromExcel = async (
     };
 
     reader.readAsBinaryString(file);
+  });
+};
+
+/**
+ * Export full Master Suppliers array to a loss-less JSON backup file
+ */
+export const exportMasterSuppliersToJSON = (suppliers: MasterSupplier[], customFileName?: string) => {
+  const dateStr = new Date().toISOString().split('T')[0];
+  const fileName = customFileName || `Hilldale_Master_Suppliers_Full_Backup_${dateStr}.json`;
+  const jsonStr = JSON.stringify(suppliers, null, 2);
+  
+  const blob = new Blob([jsonStr], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+};
+
+/**
+ * Import Master Suppliers array from a JSON file backup
+ */
+export const parseSuppliersFromJSON = (file: File): Promise<MasterSupplier[]> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const text = e.target?.result as string;
+        const parsed = JSON.parse(text);
+        if (!Array.isArray(parsed)) {
+          throw new Error('JSON file must contain an array of suppliers.');
+        }
+        resolve(parsed as MasterSupplier[]);
+      } catch (err: any) {
+        reject(new Error('Invalid JSON format: ' + err.message));
+      }
+    };
+    reader.onerror = () => reject(new Error('Failed to read JSON file.'));
+    reader.readAsText(file);
   });
 };
