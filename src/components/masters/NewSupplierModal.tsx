@@ -62,10 +62,6 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({
       setError('Please enter a company name.');
       return;
     }
-    if (!contactPerson.trim()) {
-      setError('Please enter a contact person name.');
-      return;
-    }
 
     const openBal = parseFloat(openingBalanceUSD) || 0;
 
@@ -153,11 +149,10 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-bold text-text uppercase tracking-wider mb-1.5">
-                Contact Person *
+                Contact Person (Optional)
               </label>
               <input
                 type="text"
-                required
                 value={contactPerson}
                 onChange={(e) => setContactPerson(e.target.value)}
                 placeholder="e.g. Rohan Jayawardena"
