@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { X, ShoppingBag, Plus, Trash2, Check, DollarSign, Calendar } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { MasterSupplier, SupplierPurchaseItem, UnitOfMeasure } from '../../types';
@@ -19,6 +19,10 @@ export const RecordSupplierPurchaseModal: React.FC<RecordSupplierPurchaseModalPr
   const { recordSupplierPurchase, settings } = useApp();
   const { data: masterSuppliers = [] } = useSuppliers.useGetAll();
   const { data: masterItems = [] } = useItems.useGetAll();
+
+  const purchasableItems = useMemo(() => {
+    return masterItems.filter(m => m.isAvailable !== false && m.useInExpenses !== false);
+  }, [masterItems]);
 
   const [supplierId, setSupplierId] = useState('');
   const [invoiceNumber, setInvoiceNumber] = useState('');
@@ -275,7 +279,7 @@ export const RecordSupplierPurchaseModal: React.FC<RecordSupplierPurchaseModalPr
                       onChange={(e) => handleUpdateItemRow(idx, { itemId: e.target.value })}
                       className="flex-1 bg-surface-muted border border-border rounded-lg px-2.5 py-1.5 text-xs text-text focus:outline-hidden"
                     >
-                      {masterItems.map((m) => (
+                      {purchasableItems.map((m) => (
                         <option key={m.id} value={m.id}>
                           {m.name} ({m.unit})
                         </option>

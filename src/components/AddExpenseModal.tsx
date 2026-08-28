@@ -127,7 +127,7 @@ export const AddExpenseModal: React.FC = () => {
 
   const masterItemOptions = useMemo(() => {
     return masterItems
-      .filter(i => i.type === 'RAW' || i.type === 'RESALE' || i.type === 'EXPENSE' || i.type === 'RAW_MATERIAL' || i.useInExpenses !== false)
+      .filter(i => i.isAvailable !== false && i.useInExpenses !== false)
       .map(i => ({
         value: i.id,
         label: i.name,
