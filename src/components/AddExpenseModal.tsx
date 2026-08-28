@@ -14,38 +14,37 @@ import {
 import { useApp } from '../context/AppContext';
 import { Expense, ExpenseLineItem, PaymentMethod, ExpenseCategory } from '../types';
 import { useItems, useSuppliers } from '../hooks/useMasters';
+import { useAccounts } from '../hooks/useAccounts';
+import { useExpenses } from '../hooks/useExpenses';
 import { SearchableDropdown } from './ui/SearchableDropdown';
 
 export const EXPENSE_CATEGORIES: { id: ExpenseCategory; label: string; icon: string; description: string }[] = [
-  { id: 'kitchen_food', label: 'Kitchen - Food, Meats & Fresh Produce', icon: 'dYc', description: 'Groceries, poultry, seafood, dairy, vegetables' },
-  { id: 'beverage_bar', label: 'Bar & Beverages - Liquors, Tea, Coffee', icon: 'dY?', description: 'Spirits, wines, Ceylon tea, barista coffee' },
-  { id: 'utilities_energy', label: 'Utilities - Electricity & Power', icon: 's', description: 'CEB bills, solar maintenance, grid power' },
-  { id: 'gas_fuel', label: 'Fuel & Gas - Diesel Generator & Kitchen LP Gas', icon: '>', description: 'Generator diesel, cooking gas cylinders' },
-  { id: 'staff_payroll', label: 'Staff Payroll & Service Charge Pool', icon: 'dY`', description: 'Kitchen chefs, steward wages, service pool payout' },
-  { id: 'maintenance', label: 'Chalet, Pool & Garden Maintenance', icon: 'dY>,?', description: 'Pool chlorine, carpentry, landscape upkeep' },
-  { id: 'marketing', label: 'Marketing, OTA Commissions & Booking Fees', icon: 'dYO?', description: 'Booking.com commissions, ads, print' },
-  { id: 'linens_amenities', label: 'Linens, Guest Amenities & Toiletries', icon: 'dY>?,?', description: 'Towels, bedsheets, organic toiletries' },
-  { id: 'other', label: 'Sundry & General Operating Costs', icon: 'dY"', description: 'Stationery, transport, miscellaneous' },
+  { id: 'kitchen_food', label: 'Kitchen - Food, Meats & Fresh Produce', icon: '🥩', description: 'Groceries, poultry, seafood, dairy, vegetables' },
+  { id: 'beverage_bar', label: 'Bar & Beverages - Liquors, Tea, Coffee', icon: '🍷', description: 'Spirits, wines, Ceylon tea, barista coffee' },
+  { id: 'utilities_energy', label: 'Utilities - Electricity & Power', icon: '⚡', description: 'CEB bills, solar maintenance, grid power' },
+  { id: 'gas_fuel', label: 'Fuel & Gas - Diesel Generator & Kitchen LP Gas', icon: '⛽', description: 'Generator diesel, cooking gas cylinders' },
+  { id: 'staff_payroll', label: 'Staff Payroll & Service Charge Pool', icon: '👨‍🍳', description: 'Kitchen chefs, steward wages, service pool payout' },
+  { id: 'maintenance', label: 'Chalet, Pool & Garden Maintenance', icon: '🛠️', description: 'Pool chlorine, carpentry, landscape upkeep' },
+  { id: 'marketing', label: 'Marketing, OTA Commissions & Booking Fees', icon: '📢', description: 'Booking.com commissions, ads, print' },
+  { id: 'linens_amenities', label: 'Linens, Guest Amenities & Toiletries', icon: '🧺', description: 'Towels, bedsheets, organic toiletries' },
+  { id: 'other', label: 'Sundry & General Operating Costs', icon: '📋', description: 'Stationery, transport, miscellaneous' },
 ];
 
 export const AddExpenseModal: React.FC = () => {
   const { 
     isAddExpenseModalOpen, 
     setIsAddExpenseModalOpen, 
-    addExpense, 
     settings, 
-    accounts,
-    expenses,
     editingExpenseId,
     setEditingExpenseId,
-    deleteExpense,
-    updateExpense
   } = useApp();
 
+  const { accounts = [] } = useAccounts();
+  const { expenses = [], createExpenseAsync, updateExpenseAsync } = useExpenses();
   const { data: masterSuppliers = [] } = useSuppliers.useGetAll();
   const { data: masterItems = [] } = useItems.useGetAll();
 
-  const activeAccounts = accounts.filter(a => a.isActive);
+  const activeAccounts = useMemo(() => (accounts || []).filter(a => a.isActive), [accounts]);
 
   // Form State
   const [title, setTitle] = useState('');
@@ -250,12 +249,16 @@ export const AddExpenseModal: React.FC = () => {
       status: isPaid ? 'PAID' : 'UNPAID'
     };
 
-    if (editingExpenseId) {
-      updateExpense(editingExpenseId, newExpense);
-    } else {
-      addExpense(newExpense);
+    try {
+      if (editingExpenseId) {
+        await updateExpenseAsync({ id: editingExpenseId, ...newExpense });
+      } else {
+        await createExpenseAsync(newExpense);
+      }
+      handleClose();
+    } catch (err: any) {
+      setError(err.response?.data?.error || err.message || 'Failed to save expense.');
     }
-    handleClose();
   };
 
   const handleClose = () => {
