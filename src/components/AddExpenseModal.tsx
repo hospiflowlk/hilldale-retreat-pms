@@ -185,7 +185,7 @@ export const AddExpenseModal: React.FC = () => {
     }));
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!title.trim()) {
       setError('Please provide an Expense Name.');
       return;
