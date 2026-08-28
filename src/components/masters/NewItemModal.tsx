@@ -61,6 +61,8 @@ export const NewItemModal: React.FC<NewItemModalProps> = ({
   const [barcode, setBarcode] = useState('');
   const [isAvailable, setIsAvailable] = useState(true);
   const [showInPos, setShowInPos] = useState(true);
+  const [useInInvoices, setUseInInvoices] = useState(true);
+  const [useInExpenses, setUseInExpenses] = useState(true);
   const [bom, setBom] = useState<BOMIngredient[]>([]);
   const [error, setError] = useState<string | null>(null);
 
@@ -111,6 +113,8 @@ export const NewItemModal: React.FC<NewItemModalProps> = ({
       setBarcode(itemToEdit.barcode || '');
       setIsAvailable(itemToEdit.isAvailable !== false);
       setShowInPos(itemToEdit.showInPos !== false);
+      setUseInInvoices(itemToEdit.useInInvoices !== false);
+      setUseInExpenses(itemToEdit.useInExpenses !== false);
       setBom(itemToEdit.bom || []);
     } else {
       setName('');
@@ -130,7 +134,9 @@ export const NewItemModal: React.FC<NewItemModalProps> = ({
       setDescription('');
       setBarcode('');
       setIsAvailable(true);
-      setShowInPos(initialType === 'RECIPE' || initialType === 'RESALE');
+      setShowInPos(initialType === 'RECIPE' || initialType === 'RESALE' || initialType === 'EXPENSE');
+      setUseInInvoices(initialType !== 'RAW' && initialType !== 'RAW_MATERIAL');
+      setUseInExpenses(initialType === 'RAW' || initialType === 'RAW_MATERIAL' || initialType === 'RESALE' || initialType === 'EXPENSE');
       setBom([]);
     }
     setError(null);
@@ -223,6 +229,8 @@ export const NewItemModal: React.FC<NewItemModalProps> = ({
       reorderThreshold: isExpense ? 0 : reorderNum,
       isAvailable,
       showInPos,
+      useInInvoices,
+      useInExpenses,
       bom: isRecipe ? bom : undefined,
       description: description.trim() || undefined,
       barcode: barcode.trim() || undefined
@@ -285,7 +293,12 @@ export const NewItemModal: React.FC<NewItemModalProps> = ({
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               <button
                 type="button"
-                onClick={() => setType('RAW')}
+                onClick={() => {
+                  setType('RAW');
+                  setShowInPos(false);
+                  setUseInInvoices(false);
+                  setUseInExpenses(true);
+                }}
                 className={`p-3 rounded-xl text-left border transition cursor-pointer flex flex-col justify-between gap-1.5 ${
                   type === 'RAW' || type === 'RAW_MATERIAL'
                     ? 'bg-emerald-50 border-emerald-600 text-emerald-900 shadow-xs'
@@ -301,7 +314,12 @@ export const NewItemModal: React.FC<NewItemModalProps> = ({
 
               <button
                 type="button"
-                onClick={() => setType('RESALE')}
+                onClick={() => {
+                  setType('RESALE');
+                  setShowInPos(true);
+                  setUseInInvoices(true);
+                  setUseInExpenses(true);
+                }}
                 className={`p-3 rounded-xl text-left border transition cursor-pointer flex flex-col justify-between gap-1.5 ${
                   type === 'RESALE'
                     ? 'bg-sky-50 border-sky-600 text-sky-900 shadow-xs'
@@ -317,7 +335,12 @@ export const NewItemModal: React.FC<NewItemModalProps> = ({
 
               <button
                 type="button"
-                onClick={() => setType('RECIPE')}
+                onClick={() => {
+                  setType('RECIPE');
+                  setShowInPos(true);
+                  setUseInInvoices(true);
+                  setUseInExpenses(false);
+                }}
                 className={`p-3 rounded-xl text-left border transition cursor-pointer flex flex-col justify-between gap-1.5 ${
                   type === 'RECIPE'
                     ? 'bg-amber-50 border-amber-700 text-amber-900 shadow-xs'
@@ -333,7 +356,12 @@ export const NewItemModal: React.FC<NewItemModalProps> = ({
 
               <button
                 type="button"
-                onClick={() => setType('EXPENSE')}
+                onClick={() => {
+                  setType('EXPENSE');
+                  setShowInPos(true);
+                  setUseInInvoices(true);
+                  setUseInExpenses(true);
+                }}
                 className={`p-3 rounded-xl text-left border transition cursor-pointer flex flex-col justify-between gap-1.5 ${
                   type === 'EXPENSE'
                     ? 'bg-purple-50 border-purple-700 text-purple-900 shadow-xs'
@@ -616,7 +644,7 @@ export const NewItemModal: React.FC<NewItemModalProps> = ({
             />
           </div>
 
-          {/* Toggles: Availability & POS Visibility */}
+          {/* Toggles: Availability, POS Visibility, Invoices & Expenses */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="flex items-center justify-between p-3 rounded-xl bg-surface-muted/40 border border-border">
               <div>
@@ -641,6 +669,32 @@ export const NewItemModal: React.FC<NewItemModalProps> = ({
                 checked={showInPos}
                 onChange={(e) => setShowInPos(e.target.checked)}
                 className="w-4 h-4 accent-amber-700 rounded cursor-pointer"
+              />
+            </div>
+
+            <div className="flex items-center justify-between p-3 rounded-xl bg-sky-500/10 border border-sky-200/80">
+              <div>
+                <span className="text-xs font-bold text-sky-950 block">Use in Invoices & Billing</span>
+                <span className="text-[10px] text-sky-800 font-medium">Available on guest folios & room bills.</span>
+              </div>
+              <input
+                type="checkbox"
+                checked={useInInvoices}
+                onChange={(e) => setUseInInvoices(e.target.checked)}
+                className="w-4 h-4 accent-sky-700 rounded cursor-pointer"
+              />
+            </div>
+
+            <div className="flex items-center justify-between p-3 rounded-xl bg-purple-500/10 border border-purple-200/80">
+              <div>
+                <span className="text-xs font-bold text-purple-950 block">Use in Expenses & Outflows</span>
+                <span className="text-[10px] text-purple-800 font-medium">Available on supplier bills & vouchers.</span>
+              </div>
+              <input
+                type="checkbox"
+                checked={useInExpenses}
+                onChange={(e) => setUseInExpenses(e.target.checked)}
+                className="w-4 h-4 accent-purple-700 rounded cursor-pointer"
               />
             </div>
           </div>
